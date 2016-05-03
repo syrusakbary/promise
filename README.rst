@@ -85,8 +85,10 @@ replaced by their fulfilled values. e.g.
 
 .. code:: python
 
-    Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
-           .then(lambda res: assert res == ['a', 'b', 'c'])
+    p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
+           .then(lambda res: res == ['a', 'b', 'c'])
+
+    assert p.value is True
 
 Instance Methods
 ~~~~~~~~~~~~~~~~
