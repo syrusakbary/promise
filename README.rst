@@ -9,7 +9,7 @@ Python.
 Its fully compatible with the `Promises/A+
 spec <http://promises-aplus.github.io/promises-spec/>`__
 
-|travis| |npm| |downloads|
+|travis| |pypi| |coveralls|
 
 Installation
 ------------
@@ -162,7 +162,7 @@ License <https://github.com/syrusakbary/promise/blob/master/LICENSE>`__
 
 .. |travis| image:: https://img.shields.io/travis/syrusakbary/pypromise.svg?style=flat
    :target: https://travis-ci.org/syrusakbary/pypromise
-.. |npm| image:: https://img.shields.io/pypi/v/pypromise.svg?style=flat
+.. |pypi| image:: https://img.shields.io/pypi/v/pypromise.svg?style=flat
    :target: https://pypi.python.org/pypi/pypromise
-.. |downloads| image:: https://img.shields.io/pypi/dm/pypromise.svg?style=flat
-   :target: https://pypi.python.org/pypi/pypromise
+.. |coveralls| image:: https://coveralls.io/repos/syrusakbary/pypromise/badge.svg?branch=master&service=github
+   :target: https://coveralls.io/github/syrusakbary/pypromise?branch=master

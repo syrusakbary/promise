@@ -6,15 +6,15 @@ It is a super set of Promises/A+ designed to have readable, performant code and 
 Its fully compatible with the [Promises/A+ spec](http://promises-aplus.github.io/promises-spec/)
 
 [![travis][travis-image]][travis-url]
-[![npm][npm-image]][npm-url]
-[![downloads][downloads-image]][downloads-url]
+[![pypi][pypi-image]][pypi-url]
+[![coveralls][coveralls-image]][coveralls-url]
 
 [travis-image]: https://img.shields.io/travis/syrusakbary/pypromise.svg?style=flat
 [travis-url]: https://travis-ci.org/syrusakbary/pypromise
-[npm-image]: https://img.shields.io/pypi/v/pypromise.svg?style=flat
-[npm-url]: https://pypi.python.org/pypi/pypromise
-[downloads-image]: https://img.shields.io/pypi/dm/pypromise.svg?style=flat
-[downloads-url]: https://pypi.python.org/pypi/pypromise
+[pypi-image]: https://img.shields.io/pypi/v/pypromise.svg?style=flat
+[pypi-url]: https://pypi.python.org/pypi/pypromise
+[coveralls-image]: https://coveralls.io/repos/syrusakbary/pypromise/badge.svg?branch=master&service=github
+[coveralls-url]: https://coveralls.io/github/syrusakbary/pypromise?branch=master
 
 ## Installation
 
