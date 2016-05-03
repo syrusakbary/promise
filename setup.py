@@ -1,9 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='promise',
+    name='pypromise',
     version='0.3',
     description='Promises/A+ implementation for Python',
+    long_description=open('README.rst').read(),
     url='https://github.com/syrusakbary/promise',
     download_url='https://github.com/syrusakbary/promise/releases',
     author='Syrus Akbary',
