@@ -408,6 +408,10 @@ def test_is_thenable_future():
     assert is_thenable(promise)
 
 
+def test_is_thenable_simple_object():
+    assert not is_thenable(object())
+
+
 def test_promisify_promise():
     promise = Promise()
     assert promisify(promise) == promise
@@ -443,3 +447,9 @@ def test_promisify_future_rejected():
     future.set_exception(Exception('Future rejected'))
     assert promise.is_rejected
     assert_exception(promise.reason, Exception, 'Future rejected')
+
+
+def test_promisify_object():
+    with pytest.raises(TypeError) as excinfo:
+        promisify(object())
+    assert str(excinfo.value) == "Object is not a Promise like object."
