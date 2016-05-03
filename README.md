@@ -65,8 +65,10 @@ Returns a rejected promise with the given value.
 Returns a promise for a list.  If it is called with a single argument then this returns a promise for a copy of that list with any promises replaced by their fulfilled values.  e.g.
 
 ```python
-Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
-       .then(lambda res: assert res == ['a', 'b', 'c'])
+p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
+       .then(lambda res: res == ['a', 'b', 'c'])
+
+assert p.value is True
 ```
 
 ### Instance Methods
