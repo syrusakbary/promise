@@ -24,7 +24,7 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
 
-    keywords='api graphql protocol rest',
+    keywords='concurrent future deferred promise',
     packages=find_packages(exclude=['tests']),
     tests_require=['pytest>=2.7.3', 'futures'],
 )
