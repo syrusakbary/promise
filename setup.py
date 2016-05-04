@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='pypromise',
@@ -25,6 +25,6 @@ setup(
     ],
 
     keywords='concurrent future deferred promise',
-    packages=find_packages(exclude=['tests']),
+    py_modules=["promise"],
     tests_require=['pytest>=2.7.3', 'futures'],
 )
