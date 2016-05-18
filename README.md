@@ -9,16 +9,16 @@ Its fully compatible with the [Promises/A+ spec](http://promises-aplus.github.io
 [![pypi][pypi-image]][pypi-url]
 [![coveralls][coveralls-image]][coveralls-url]
 
-[travis-image]: https://img.shields.io/travis/syrusakbary/pypromise.svg?style=flat
-[travis-url]: https://travis-ci.org/syrusakbary/pypromise
-[pypi-image]: https://img.shields.io/pypi/v/pypromise.svg?style=flat
-[pypi-url]: https://pypi.python.org/pypi/pypromise
-[coveralls-image]: https://coveralls.io/repos/syrusakbary/pypromise/badge.svg?branch=master&service=github
-[coveralls-url]: https://coveralls.io/github/syrusakbary/pypromise?branch=master
+[travis-image]: https://img.shields.io/travis/syrusakbary/promise.svg?style=flat
+[travis-url]: https://travis-ci.org/syrusakbary/promise
+[pypi-image]: https://img.shields.io/pypi/v/promise.svg?style=flat
+[pypi-url]: https://pypi.python.org/pypi/promise
+[coveralls-image]: https://coveralls.io/repos/syrusakbary/promise/badge.svg?branch=master&service=github
+[coveralls-url]: https://coveralls.io/github/syrusakbary/promise?branch=master
 
 ## Installation
 
-    $ pip install pypromise
+    $ pip install promise
 
 
 ## Usage

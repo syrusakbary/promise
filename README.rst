@@ -16,7 +16,7 @@ Installation
 
 ::
 
-    $ pip install pypromise
+    $ pip install promise
 
 Usage
 -----
@@ -160,9 +160,9 @@ License
 `MIT
 License <https://github.com/syrusakbary/promise/blob/master/LICENSE>`__
 
-.. |travis| image:: https://img.shields.io/travis/syrusakbary/pypromise.svg?style=flat
-   :target: https://travis-ci.org/syrusakbary/pypromise
-.. |pypi| image:: https://img.shields.io/pypi/v/pypromise.svg?style=flat
-   :target: https://pypi.python.org/pypi/pypromise
-.. |coveralls| image:: https://coveralls.io/repos/syrusakbary/pypromise/badge.svg?branch=master&service=github
-   :target: https://coveralls.io/github/syrusakbary/pypromise?branch=master
+.. |travis| image:: https://img.shields.io/travis/syrusakbary/promise.svg?style=flat
+   :target: https://travis-ci.org/syrusakbary/promise
+.. |pypi| image:: https://img.shields.io/pypi/v/promise.svg?style=flat
+   :target: https://pypi.python.org/pypi/promise
+.. |coveralls| image:: https://coveralls.io/repos/syrusakbary/promise/badge.svg?branch=master&service=github
+   :target: https://coveralls.io/github/syrusakbary/promise?branch=master

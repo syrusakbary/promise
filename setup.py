@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='pypromise',
+    name='promise',
     version='0.4',
     description='Promises/A+ implementation for Python',
     long_description=open('README.rst').read(),
