@@ -115,7 +115,7 @@ class Promise(object):
 
     def _fulfill(self, value):
         with self._cb_lock:
-            if self._state != Promise.PENDING:
+            if self._state != self.PENDING:
                 return
 
             self._value = value
@@ -147,7 +147,7 @@ class Promise(object):
         assert isinstance(reason, Exception)
 
         with self._cb_lock:
-            if self._state != Promise.PENDING:
+            if self._state != self.PENDING:
                 return
 
             self._reason = reason
