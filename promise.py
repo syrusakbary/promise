@@ -455,6 +455,10 @@ class Promise(object):
         return cls.all(values).then(handleSuccess)
 
 
+promisify = Promise.promisify
+promise_for_dict = Promise.promise_for_dict
+
+
 def _process_future_result(promise):
     def handle_future_result(future):
         exception = future.exception()
