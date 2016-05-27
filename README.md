@@ -48,7 +48,7 @@ This creates and returns a new promise.  `resolver` must be a function.  The `re
  1. `resolve` should be called with a single argument.  If it is called with a non-promise value then the promise is fulfilled with that value.  If it is called with a promise (A) then the returned promise takes on the state of that new promise (A).
  2. `reject` should be called with a single argument.  The returned promise will be rejected with that argument.
 
-### Static Functions
+### Class Methods
 
   These methods are invoked by calling `Promise.methodName`.
 

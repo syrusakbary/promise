@@ -84,15 +84,15 @@ class Promise(object):
         except Exception as e:
             self.reject(e)
 
-    @staticmethod
-    def fulfilled(x):
-        p = Promise()
+    @classmethod
+    def fulfilled(cls, x):
+        p = cls()
         p.fulfill(x)
         return p
 
-    @staticmethod
-    def rejected(reason):
-        p = Promise()
+    @classmethod
+    def rejected(cls, reason):
+        p = cls()
         p.reject(reason)
         return p
 
@@ -327,7 +327,7 @@ class Promise(object):
         :type failure: (object) -> object
         :rtype : Promise
         """
-        ret = Promise()
+        ret = self.__class__()
 
         def call_and_fulfill(v):
             """
