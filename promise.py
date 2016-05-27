@@ -59,6 +59,12 @@ class Promise(object):
         if fn:
             self.do_resolve(fn)
 
+    def __iter__(self):
+        yield self.get()
+
+    def __await__(self):
+        yield self.get()
+
     def do_resolve(self, fn):
         self._done = False
 
