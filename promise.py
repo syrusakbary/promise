@@ -99,7 +99,7 @@ class Promise(object):
             raise TypeError("Cannot resolve promise with itself.")
         elif is_thenable(x):
             try:
-                promisify(x).done(self.fulfill, self.reject)
+                self.promisify(x).done(self.fulfill, self.reject)
             except Exception as e:
                 self.reject(e)
         else:
@@ -384,8 +384,8 @@ class Promise(object):
 
         return promises
 
-    @staticmethod
-    def all(values_or_promises):
+    @classmethod
+    def all(cls, values_or_promises):
         """
         A special function that takes a bunch of promises
         and turns them into a promise for a vector of values.
@@ -406,9 +406,28 @@ class Promise(object):
                 all_promise.fulfill(values)
 
         for p in promises:
-            promisify(p).done(handleSuccess, all_promise.reject)
+            cls.promisify(p).done(handleSuccess, all_promise.reject)
 
         return all_promise
+
+    @classmethod
+    def promisify(cls, obj):
+        if isinstance(obj, Promise):
+            return obj
+        elif is_future(obj):
+            promise = cls()
+            obj.add_done_callback(_process_future_result(promise))
+            return promise
+        elif hasattr(obj, "done") and callable(getattr(obj, "done")):
+            p = cls()
+            obj.done(p.fulfill, p.reject)
+            return p
+        elif hasattr(obj, "then") and callable(getattr(obj, "then")):
+            p = cls()
+            obj.then(p.fulfill, p.reject)
+            return p
+        else:
+            raise TypeError("Object is not a Promise like object.")
 
 
 def _process_future_result(promise):
@@ -434,25 +453,6 @@ def is_thenable(obj):
     return isinstance(obj, Promise) or is_future(obj) or (
         hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
         hasattr(obj, "then") and callable(getattr(obj, "then")))
-
-
-def promisify(obj):
-    if isinstance(obj, Promise):
-        return obj
-    elif is_future(obj):
-        promise = Promise()
-        obj.add_done_callback(_process_future_result(promise))
-        return promise
-    elif hasattr(obj, "done") and callable(getattr(obj, "done")):
-        p = Promise()
-        obj.done(p.fulfill, p.reject)
-        return p
-    elif hasattr(obj, "then") and callable(getattr(obj, "then")):
-        p = Promise()
-        obj.then(p.fulfill, p.reject)
-        return p
-    else:
-        raise TypeError("Object is not a Promise like object.")
 
 
 def promise_for_dict(m):

@@ -3,7 +3,7 @@
 import time
 import pytest
 
-from promise import Promise, promise_for_dict, is_thenable, promisify
+from promise import Promise, promise_for_dict, is_thenable
 from concurrent.futures import Future
 from threading import Thread
 
@@ -414,26 +414,26 @@ def test_is_thenable_simple_object():
 
 def test_promisify_promise():
     promise = Promise()
-    assert promisify(promise) == promise
+    assert Promise.promisify(promise) == promise
 
 
 def test_promisify_then_object():
     promise = FakeThenPromise()
     with pytest.raises(Exception) as excinfo:
-        promisify(promise)
+        Promise.promisify(promise)
     assert str(excinfo.value) == "FakeThenPromise raises in 'then'"
 
 
 def test_promisify_done_object():
     promise = FakeDonePromise()
     with pytest.raises(Exception) as excinfo:
-        promisify(promise)
+        Promise.promisify(promise)
     assert str(excinfo.value) == "FakeDonePromise raises in 'done'"
 
 
 def test_promisify_future():
     future = Future()
-    promise = promisify(future)
+    promise = Promise.promisify(future)
     assert promise.is_pending
     future.set_result(1)
     assert promise.is_fulfilled
@@ -442,7 +442,7 @@ def test_promisify_future():
 
 def test_promisify_future_rejected():
     future = Future()
-    promise = promisify(future)
+    promise = Promise.promisify(future)
     assert promise.is_pending
     future.set_exception(Exception('Future rejected'))
     assert promise.is_rejected
@@ -451,5 +451,5 @@ def test_promisify_future_rejected():
 
 def test_promisify_object():
     with pytest.raises(TypeError) as excinfo:
-        promisify(object())
+        Promise.promisify(object())
     assert str(excinfo.value) == "Object is not a Promise like object."

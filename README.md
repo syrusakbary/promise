@@ -71,6 +71,12 @@ p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
 assert p.value is True
 ```
 
+### Promise.promisify(obj)
+
+This function wraps the `obj` act as a `Promise` if possible.
+Python `Future`s are supported, with a callback to `promise.done` when resolved.
+
+
 ### Instance Methods
 
 These methods are invoked on a promise instance by calling `myPromise.methodName`
@@ -98,12 +104,6 @@ The same semantics as `.then` except that it does not return a promise and any e
 ### is_thenable(obj)
 
 This function checks if the `obj` is a `Promise`, or could be `promisify`ed.
-
-
-### promisify(obj)
-
-This function wraps the `obj` act as a `Promise` if possible.
-Python `Future`s are supported, with a callback to `promise.done` when resolved.
 
 
 # Notes
