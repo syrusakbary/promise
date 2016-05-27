@@ -401,9 +401,9 @@ class Promise(object):
         promises = list(filter(is_thenable, values_or_promises))
         if len(promises) == 0:
             # All the values or promises are resolved
-            return Promise.fulfilled(values_or_promises)
+            return cls.fulfilled(values_or_promises)
 
-        all_promise = Promise()
+        all_promise = cls()
         counter = CountdownLatch(len(promises))
 
         def handleSuccess(_):
@@ -435,6 +435,25 @@ class Promise(object):
         else:
             raise TypeError("Object is not a Promise like object.")
 
+    @classmethod
+    def promise_for_dict(cls, m):
+        """
+        A special function that takes a dictionary of promises
+        and turns them into a promise for a dictionary of values.
+        In other words, this turns an dictionary of promises for values
+        into a promise for a dictionary of values.
+        """
+        if not m:
+            return cls.fulfilled({})
+
+        keys, values = zip(*m.items())
+        dict_type = type(m)
+
+        def handleSuccess(resolved_values):
+            return dict_type(zip(keys, resolved_values))
+
+        return cls.all(values).then(handleSuccess)
+
 
 def _process_future_result(promise):
     def handle_future_result(future):
@@ -459,22 +478,3 @@ def is_thenable(obj):
     return isinstance(obj, Promise) or is_future(obj) or (
         hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
         hasattr(obj, "then") and callable(getattr(obj, "then")))
-
-
-def promise_for_dict(m):
-    """
-    A special function that takes a dictionary of promises
-    and turns them into a promise for a dictionary of values.
-    In other words, this turns an dictionary of promises for values
-    into a promise for a dictionary of values.
-    """
-    if not m:
-        return Promise.fulfilled({})
-
-    keys, values = zip(*m.items())
-    dict_type = type(m)
-
-    def handleSuccess(resolved_values):
-        return dict_type(zip(keys, resolved_values))
-
-    return Promise.all(values).then(handleSuccess)

@@ -3,7 +3,7 @@
 import time
 import pytest
 
-from promise import Promise, promise_for_dict, is_thenable
+from promise import Promise, is_thenable
 from concurrent.futures import Future
 from threading import Thread
 
@@ -241,9 +241,9 @@ def test_dict_promise_when():
     p1 = Promise()
     p2 = Promise()
     d = {"a": p1, "b": p2}
-    pd1 = promise_for_dict(d)
-    pd2 = promise_for_dict({"a": p1})
-    pd3 = promise_for_dict({})
+    pd1 = Promise.promise_for_dict(d)
+    pd2 = Promise.promise_for_dict({"a": p1})
+    pd3 = Promise.promise_for_dict({})
     assert p1.is_pending
     assert p2.is_pending
     assert pd1.is_pending
@@ -271,7 +271,7 @@ def test_dict_promise_if():
     p1 = Promise()
     p2 = Promise()
     d = {"a": p1, "b": p2}
-    pd = promise_for_dict(d)
+    pd = Promise.promise_for_dict(d)
     assert p1.is_pending
     assert p2.is_pending
     assert pd.is_pending

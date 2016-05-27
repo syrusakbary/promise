@@ -71,10 +71,18 @@ p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
 assert p.value is True
 ```
 
-### Promise.promisify(obj)
+#### Promise.promisify(obj)
 
 This function wraps the `obj` act as a `Promise` if possible.
 Python `Future`s are supported, with a callback to `promise.done` when resolved.
+
+
+#### Promise.promise_for_dict(d)
+
+A special function that takes a dictionary of promises and turns them
+into a promise for a dictionary of values.  In other words, this turns
+an dictionary of promises for values into a promise for a dictionary
+of values.
 
 
 ### Instance Methods
