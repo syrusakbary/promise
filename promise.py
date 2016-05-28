@@ -1,15 +1,4 @@
-try:
-    from asyncio import Future as AsyncioFuture
-except ImportError:
-    AsyncioFuture = None
-try:
-    from concurrent.futures import Future as ConcurrentFuture
-except ImportError:
-    ConcurrentFuture = None
 from threading import Event, RLock
-
-
-future_classes = tuple(filter(None, (AsyncioFuture, ConcurrentFuture)))
 
 
 class CountdownLatch(object):
@@ -423,7 +412,7 @@ def _process_future_result(promise):
 
 
 def is_future(obj):
-    return isinstance(obj, future_classes)
+    return hasattr(obj, "add_done_callback") and callable(getattr(obj, "add_done_callback"))
 
 
 def is_thenable(obj):
