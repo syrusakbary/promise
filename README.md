@@ -48,7 +48,7 @@ This creates and returns a new promise.  `resolver` must be a function.  The `re
  1. `resolve` should be called with a single argument.  If it is called with a non-promise value then the promise is fulfilled with that value.  If it is called with a promise (A) then the returned promise takes on the state of that new promise (A).
  2. `reject` should be called with a single argument.  The returned promise will be rejected with that argument.
 
-### Static Functions
+### Class Methods
 
   These methods are invoked by calling `Promise.methodName`.
 
@@ -56,7 +56,7 @@ This creates and returns a new promise.  `resolver` must be a function.  The `re
 
 Converts values and foreign promises into Promises/A+ promises.  If you pass it a value then it returns a Promise for that value.  If you pass it something that is close to a promise (such as a jQuery attempt at a promise) it returns a Promise that takes on the state of `value` (rejected or fulfilled).
 
-#### Promise.reject(value)
+#### Promise.rejected(value)
 
 Returns a rejected promise with the given value.
 
@@ -70,6 +70,20 @@ p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
 
 assert p.value is True
 ```
+
+#### Promise.promisify(obj)
+
+This function wraps the `obj` act as a `Promise` if possible.
+Python `Future`s are supported, with a callback to `promise.done` when resolved.
+
+
+#### Promise.for_dict(d)
+
+A special function that takes a dictionary of promises and turns them
+into a promise for a dictionary of values.  In other words, this turns
+an dictionary of promises for values into a promise for a dictionary
+of values.
+
 
 ### Instance Methods
 
@@ -98,12 +112,6 @@ The same semantics as `.then` except that it does not return a promise and any e
 ### is_thenable(obj)
 
 This function checks if the `obj` is a `Promise`, or could be `promisify`ed.
-
-
-### promisify(obj)
-
-This function wraps the `obj` act as a `Promise` if possible.
-Python `Future`s are supported, with a callback to `promise.done` when resolved.
 
 
 # Notes

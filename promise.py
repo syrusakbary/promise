@@ -48,6 +48,12 @@ class Promise(object):
         if fn:
             self.do_resolve(fn)
 
+    def __iter__(self):
+        yield self.get()
+
+    def __await__(self):
+        yield self.get()
+
     def do_resolve(self, fn):
         self._done = False
 
@@ -67,15 +73,15 @@ class Promise(object):
         except Exception as e:
             self.reject(e)
 
-    @staticmethod
-    def fulfilled(x):
-        p = Promise()
+    @classmethod
+    def fulfilled(cls, x):
+        p = cls()
         p.fulfill(x)
         return p
 
-    @staticmethod
-    def rejected(reason):
-        p = Promise()
+    @classmethod
+    def rejected(cls, reason):
+        p = cls()
         p.reject(reason)
         return p
 
@@ -88,7 +94,7 @@ class Promise(object):
             raise TypeError("Cannot resolve promise with itself.")
         elif is_thenable(x):
             try:
-                promisify(x).done(self.fulfill, self.reject)
+                self.promisify(x).done(self.fulfill, self.reject)
             except Exception as e:
                 self.reject(e)
         else:
@@ -98,7 +104,7 @@ class Promise(object):
 
     def _fulfill(self, value):
         with self._cb_lock:
-            if self._state != Promise.PENDING:
+            if self._state != self.PENDING:
                 return
 
             self._value = value
@@ -130,7 +136,7 @@ class Promise(object):
         assert isinstance(reason, Exception)
 
         with self._cb_lock:
-            if self._state != Promise.PENDING:
+            if self._state != self.PENDING:
                 return
 
             self._reason = reason
@@ -310,7 +316,7 @@ class Promise(object):
         :type failure: (object) -> object
         :rtype : Promise
         """
-        ret = Promise()
+        ret = self.__class__()
 
         def call_and_fulfill(v):
             """
@@ -373,8 +379,8 @@ class Promise(object):
 
         return promises
 
-    @staticmethod
-    def all(values_or_promises):
+    @classmethod
+    def all(cls, values_or_promises):
         """
         A special function that takes a bunch of promises
         and turns them into a promise for a vector of values.
@@ -384,9 +390,9 @@ class Promise(object):
         promises = list(filter(is_thenable, values_or_promises))
         if len(promises) == 0:
             # All the values or promises are resolved
-            return Promise.fulfilled(values_or_promises)
+            return cls.fulfilled(values_or_promises)
 
-        all_promise = Promise()
+        all_promise = cls()
         counter = CountdownLatch(len(promises))
 
         def handleSuccess(_):
@@ -395,9 +401,51 @@ class Promise(object):
                 all_promise.fulfill(values)
 
         for p in promises:
-            promisify(p).done(handleSuccess, all_promise.reject)
+            cls.promisify(p).done(handleSuccess, all_promise.reject)
 
         return all_promise
+
+    @classmethod
+    def promisify(cls, obj):
+        if isinstance(obj, cls):
+            return obj
+        elif is_future(obj):
+            promise = cls()
+            obj.add_done_callback(_process_future_result(promise))
+            return promise
+        elif hasattr(obj, "done") and callable(getattr(obj, "done")):
+            p = cls()
+            obj.done(p.fulfill, p.reject)
+            return p
+        elif hasattr(obj, "then") and callable(getattr(obj, "then")):
+            p = cls()
+            obj.then(p.fulfill, p.reject)
+            return p
+        else:
+            raise TypeError("Object is not a Promise like object.")
+
+    @classmethod
+    def for_dict(cls, m):
+        """
+        A special function that takes a dictionary of promises
+        and turns them into a promise for a dictionary of values.
+        In other words, this turns an dictionary of promises for values
+        into a promise for a dictionary of values.
+        """
+        if not m:
+            return cls.fulfilled({})
+
+        keys, values = zip(*m.items())
+        dict_type = type(m)
+
+        def handleSuccess(resolved_values):
+            return dict_type(zip(keys, resolved_values))
+
+        return cls.all(values).then(handleSuccess)
+
+
+promisify = Promise.promisify
+promise_for_dict = Promise.for_dict
 
 
 def _process_future_result(promise):
@@ -423,41 +471,3 @@ def is_thenable(obj):
     return isinstance(obj, Promise) or is_future(obj) or (
         hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
         hasattr(obj, "then") and callable(getattr(obj, "then")))
-
-
-def promisify(obj):
-    if isinstance(obj, Promise):
-        return obj
-    elif is_future(obj):
-        promise = Promise()
-        obj.add_done_callback(_process_future_result(promise))
-        return promise
-    elif hasattr(obj, "done") and callable(getattr(obj, "done")):
-        p = Promise()
-        obj.done(p.fulfill, p.reject)
-        return p
-    elif hasattr(obj, "then") and callable(getattr(obj, "then")):
-        p = Promise()
-        obj.then(p.fulfill, p.reject)
-        return p
-    else:
-        raise TypeError("Object is not a Promise like object.")
-
-
-def promise_for_dict(m):
-    """
-    A special function that takes a dictionary of promises
-    and turns them into a promise for a dictionary of values.
-    In other words, this turns an dictionary of promises for values
-    into a promise for a dictionary of values.
-    """
-    if not m:
-        return Promise.fulfilled({})
-
-    keys, values = zip(*m.items())
-    dict_type = type(m)
-
-    def handleSuccess(resolved_values):
-        return dict_type(zip(keys, resolved_values))
-
-    return Promise.all(values).then(handleSuccess)

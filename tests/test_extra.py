@@ -3,7 +3,12 @@
 import time
 import pytest
 
-from promise import Promise, promise_for_dict, is_thenable, promisify
+from promise import (
+    Promise,
+    is_thenable,
+    promisify as free_promisify,
+    promise_for_dict as free_promise_for_dict,
+)
 from concurrent.futures import Future
 from threading import Thread
 
@@ -237,7 +242,15 @@ def test_promise_all_if():
 
 
 # promise_for_dict
-def test_dict_promise_when():
+@pytest.fixture(params=[
+    Promise.for_dict,
+    free_promise_for_dict,
+])
+def promise_for_dict(request):
+    return request.param
+
+
+def test_dict_promise_when(promise_for_dict):
     p1 = Promise()
     p2 = Promise()
     d = {"a": p1, "b": p2}
@@ -267,7 +280,7 @@ def test_dict_promise_when():
     assert {} == pd3.value
 
 
-def test_dict_promise_if():
+def test_dict_promise_if(promise_for_dict):
     p1 = Promise()
     p2 = Promise()
     d = {"a": p1, "b": p2}
@@ -412,26 +425,31 @@ def test_is_thenable_simple_object():
     assert not is_thenable(object())
 
 
-def test_promisify_promise():
+@pytest.fixture(params=[free_promisify, Promise.promisify])
+def promisify(request):
+    return request.param
+
+
+def test_promisify_promise(promisify):
     promise = Promise()
     assert promisify(promise) == promise
 
 
-def test_promisify_then_object():
+def test_promisify_then_object(promisify):
     promise = FakeThenPromise()
     with pytest.raises(Exception) as excinfo:
         promisify(promise)
     assert str(excinfo.value) == "FakeThenPromise raises in 'then'"
 
 
-def test_promisify_done_object():
+def test_promisify_done_object(promisify):
     promise = FakeDonePromise()
     with pytest.raises(Exception) as excinfo:
         promisify(promise)
     assert str(excinfo.value) == "FakeDonePromise raises in 'done'"
 
 
-def test_promisify_future():
+def test_promisify_future(promisify):
     future = Future()
     promise = promisify(future)
     assert promise.is_pending
@@ -440,7 +458,7 @@ def test_promisify_future():
     assert promise.value == 1
 
 
-def test_promisify_future_rejected():
+def test_promisify_future_rejected(promisify):
     future = Future()
     promise = promisify(future)
     assert promise.is_pending
@@ -449,7 +467,18 @@ def test_promisify_future_rejected():
     assert_exception(promise.reason, Exception, 'Future rejected')
 
 
-def test_promisify_object():
+def test_promisify_object(promisify):
     with pytest.raises(TypeError) as excinfo:
         promisify(object())
     assert str(excinfo.value) == "Object is not a Promise like object."
+
+
+def test_promisify_promise_subclass():
+    class MyPromise(Promise):
+        pass
+
+    p = Promise()
+    p.fulfill(10)
+    m_p = MyPromise.promisify(p)
+    assert isinstance(m_p, MyPromise)
+    assert m_p.get() == p.get()
