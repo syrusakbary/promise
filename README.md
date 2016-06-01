@@ -77,7 +77,7 @@ This function wraps the `obj` act as a `Promise` if possible.
 Python `Future`s are supported, with a callback to `promise.done` when resolved.
 
 
-#### Promise.promise_for_dict(d)
+#### Promise.for_dict(d)
 
 A special function that takes a dictionary of promises and turns them
 into a promise for a dictionary of values.  In other words, this turns

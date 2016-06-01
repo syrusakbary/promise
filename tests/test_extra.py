@@ -243,7 +243,7 @@ def test_promise_all_if():
 
 # promise_for_dict
 @pytest.fixture(params=[
-    Promise.promise_for_dict,
+    Promise.for_dict,
     free_promise_for_dict,
 ])
 def promise_for_dict(request):
@@ -471,3 +471,14 @@ def test_promisify_object(promisify):
     with pytest.raises(TypeError) as excinfo:
         promisify(object())
     assert str(excinfo.value) == "Object is not a Promise like object."
+
+
+def test_promisify_promise_subclass():
+    class MyPromise(Promise):
+        pass
+
+    p = Promise()
+    p.fulfill(10)
+    m_p = MyPromise.promisify(p)
+    assert isinstance(m_p, MyPromise)
+    assert m_p.get() == p.get()

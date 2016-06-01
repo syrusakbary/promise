@@ -57,8 +57,8 @@ The ``resolver`` function is passed two arguments:
 2. ``reject`` should be called with a single argument. The returned
    promise will be rejected with that argument.
 
-Static Functions
-~~~~~~~~~~~~~~~~
+Class Methods
+~~~~~~~~~~~~~
 
 These methods are invoked by calling ``Promise.methodName``.
 
@@ -71,8 +71,8 @@ something that is close to a promise (such as a jQuery attempt at a
 promise) it returns a Promise that takes on the state of ``value``
 (rejected or fulfilled).
 
-Promise.reject(value)
-^^^^^^^^^^^^^^^^^^^^^
+Promise.rejected(value)
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns a rejected promise with the given value.
 
@@ -89,6 +89,21 @@ replaced by their fulfilled values. e.g.
            .then(lambda res: res == ['a', 'b', 'c'])
 
     assert p.value is True
+
+Promise.promisify(obj)
+^^^^^^^^^^^^^^^^^^^^^^
+
+This function wraps the ``obj`` act as a ``Promise`` if possible. Python
+``Future``\ s are supported, with a callback to ``promise.done`` when
+resolved.
+
+Promise.for\_dict(d)
+^^^^^^^^^^^^^^^^^^^^
+
+A special function that takes a dictionary of promises and turns them
+into a promise for a dictionary of values. In other words, this turns an
+dictionary of promises for values into a promise for a dictionary of
+values.
 
 Instance Methods
 ~~~~~~~~~~~~~~~~
@@ -140,13 +155,6 @@ is\_thenable(obj)
 
 This function checks if the ``obj`` is a ``Promise``, or could be
 ``promisify``\ ed.
-
-promisify(obj)
-~~~~~~~~~~~~~~
-
-This function wraps the ``obj`` act as a ``Promise`` if possible. Python
-``Future``\ s are supported, with a callback to ``promise.done`` when
-resolved.
 
 Notes
 =====

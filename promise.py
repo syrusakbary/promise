@@ -418,7 +418,7 @@ class Promise(object):
 
     @classmethod
     def promisify(cls, obj):
-        if isinstance(obj, Promise):
+        if isinstance(obj, cls):
             return obj
         elif is_future(obj):
             promise = cls()
@@ -436,7 +436,7 @@ class Promise(object):
             raise TypeError("Object is not a Promise like object.")
 
     @classmethod
-    def promise_for_dict(cls, m):
+    def for_dict(cls, m):
         """
         A special function that takes a dictionary of promises
         and turns them into a promise for a dictionary of values.
@@ -456,7 +456,7 @@ class Promise(object):
 
 
 promisify = Promise.promisify
-promise_for_dict = Promise.promise_for_dict
+promise_for_dict = Promise.for_dict
 
 
 def _process_future_result(promise):
