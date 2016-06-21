@@ -6,4 +6,4 @@ from promise import Promise
 @pytest.mark.asyncio
 @asyncio.coroutine
 def test_await():
-    yield from Promise.resolve(None)
+    yield from Promise.resolve(True)

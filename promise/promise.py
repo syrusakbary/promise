@@ -1,4 +1,5 @@
 from threading import Event, RLock
+from .compat import Future, iscoroutine, ensure_future, iterate_promise
 
 
 class CountdownLatch(object):
@@ -45,14 +46,22 @@ class Promise(object):
         self._callbacks = []
         self._errbacks = []
         self._event = Event()
+        self._future = None
         if fn:
             self.do_resolve(fn)
 
     def __iter__(self):
-        yield self.get()
+        return iterate_promise(self)
 
-    def __await__(self):
-        yield self.get()
+    __await__ = __iter__
+
+    @property
+    def future(self):
+        if not self._future:
+            self._future = Future()
+            self.add_callback(self._future.set_result)
+            self.add_errback(self._future.set_exception)
+        return self._future
 
     def do_resolve(self, fn):
         self._done = False
@@ -395,13 +404,13 @@ class Promise(object):
         all_promise = cls()
         counter = CountdownLatch(len(promises))
 
-        def handleSuccess(_):
+        def handle_success(_):
             if counter.dec() == 0:
                 values = list(map(lambda p: p.value if p in promises else p, values_or_promises))
                 all_promise.fulfill(values)
 
         for p in promises:
-            cls.promisify(p).done(handleSuccess, all_promise.reject)
+            cls.promisify(p).done(handle_success, all_promise.reject)
 
         return all_promise
 
@@ -421,6 +430,8 @@ class Promise(object):
             p = cls()
             obj.then(p.fulfill, p.reject)
             return p
+        elif iscoroutine(obj):
+            return cls.promisify(ensure_future(obj))
         else:
             raise TypeError("Object is not a Promise like object.")
 
@@ -438,10 +449,10 @@ class Promise(object):
         keys, values = zip(*m.items())
         dict_type = type(m)
 
-        def handleSuccess(resolved_values):
+        def handle_success(resolved_values):
             return dict_type(zip(keys, resolved_values))
 
-        return cls.all(values).then(handleSuccess)
+        return cls.all(values).then(handle_success)
 
 
 promisify = Promise.promisify

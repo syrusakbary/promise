@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='promise',
-    version='0.4.1',
+    version='0.4.2',
     description='Promises/A+ implementation for Python',
     long_description=open('README.rst').read(),
     url='https://github.com/syrusakbary/promise',
@@ -25,6 +25,6 @@ setup(
     ],
 
     keywords='concurrent future deferred promise',
-    py_modules=["promise"],
+    packages=["promise"],
     tests_require=['pytest>=2.7.3', 'futures'],
 )
