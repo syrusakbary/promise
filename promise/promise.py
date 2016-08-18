@@ -471,7 +471,7 @@ def _process_future_result(promise):
 
 
 def is_future(obj):
-    return hasattr(obj, "add_done_callback") and callable(getattr(obj, "add_done_callback"))
+    return callable(getattr(obj, "add_done_callback", None))
 
 
 def is_thenable(obj):
