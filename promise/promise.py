@@ -5,13 +5,13 @@ from .compat import Future, iscoroutine, ensure_future, iterate_promise
 class CountdownLatch(object):
 
     def __init__(self, count):
-        assert count >= 0
+        assert count >= 0, "count needs to be greater or equals to 0. Got: %s" % count
         self._lock = RLock()
         self._count = count
 
     def dec(self):
         with self._lock:
-            assert self._count > 0
+            assert self._count > 0, "count needs to be greater or equals to 0. Got: %s" % self._count
             self._count -= 1
             # Return inside lock to return the correct value,
             # otherwise an other thread could already have
@@ -142,7 +142,8 @@ class Promise(object):
         """
         Reject this promise for a given reason.
         """
-        assert isinstance(reason, Exception)
+        assert isinstance(reason, Exception), ("The reject function needs to be called with an Exception. "
+                                               "Got %s" % reason)
 
         with self._cb_lock:
             if self._state != self.PENDING:
@@ -218,7 +219,7 @@ class Promise(object):
         if you intend to use the value of the promise somehow in
         the callback, it is more convenient to use the 'then' method.
         """
-        assert callable(f)
+        assert callable(f), "A function needs to be passed into add_callback. Got: %s" % f
 
         with self._cb_lock:
             if self._state == self.PENDING:
@@ -240,7 +241,7 @@ class Promise(object):
         somehow in the callback, it is more convenient to use
         the 'then' method.
         """
-        assert callable(f)
+       assert callable(f), "A function needs to be passed into add_errback. Got: %s" % f
 
         with self._cb_lock:
             if self._state == self.PENDING:
