@@ -241,7 +241,7 @@ class Promise(object):
         somehow in the callback, it is more convenient to use
         the 'then' method.
         """
-       assert callable(f), "A function needs to be passed into add_errback. Got: %s" % f
+        assert callable(f), "A function needs to be passed into add_errback. Got: %s" % f
 
         with self._cb_lock:
             if self._state == self.PENDING:
