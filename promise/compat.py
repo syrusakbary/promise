@@ -13,6 +13,6 @@ except ImportError:
 
 try:
     from .iterate_promise import iterate_promise
-except SyntaxError:
+except (SyntaxError, ImportError):
     def iterate_promise(promise):
         raise Exception('You need "yield from" syntax for iterate in a Promise.')
