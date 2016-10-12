@@ -400,7 +400,7 @@ class Promise(object):
         """
         if len(values_or_promises) == 0:
             return cls.fulfilled(values_or_promises)
-            
+
         promises = (cls.promisify(v_or_p) if is_thenable(v_or_p) else cls.resolve(v_or_p) for
                     v_or_p in values_or_promises)
 
