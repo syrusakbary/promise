@@ -398,6 +398,9 @@ class Promise(object):
         In other words, this turns an list of promises for values
         into a promise for a list of values.
         """
+        if len(values_or_promises) == 0:
+            return cls.fulfilled(values_or_promises)
+            
         promises = (cls.promisify(v_or_p) if is_thenable(v_or_p) else cls.resolve(v_or_p) for
                     v_or_p in values_or_promises)
 
@@ -412,8 +415,6 @@ class Promise(object):
 
         for i, p in enumerate(promises):
             p.done(functools.partial(handle_success, i), all_promise.reject)
-        else:
-            all_promise.fulfill([])
 
         return all_promise
 
