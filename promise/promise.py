@@ -412,6 +412,8 @@ class Promise(object):
 
         for i, p in enumerate(promises):
             p.done(functools.partial(handle_success, i), all_promise.reject)
+        else:
+            all_promise.fulfill([])
 
         return all_promise
 
