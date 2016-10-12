@@ -1,3 +1,4 @@
+import functools
 from threading import Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise
 
