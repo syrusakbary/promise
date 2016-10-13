@@ -1,3 +1,4 @@
+import functools
 from threading import Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise
 
@@ -397,21 +398,23 @@ class Promise(object):
         In other words, this turns an list of promises for values
         into a promise for a list of values.
         """
-        promises = list(filter(is_thenable, values_or_promises))
-        if len(promises) == 0:
-            # All the values or promises are resolved
+        if len(values_or_promises) == 0:
             return cls.fulfilled(values_or_promises)
 
-        all_promise = cls()
-        counter = CountdownLatch(len(promises))
+        promises = (cls.promisify(v_or_p) if is_thenable(v_or_p) else cls.resolve(v_or_p) for
+                    v_or_p in values_or_promises)
 
-        def handle_success(_):
+        all_promise = cls()
+        counter = CountdownLatch(len(values_or_promises))
+        values = [None] * len(values_or_promises)
+
+        def handle_success(original_position, value):
+            values[original_position] = value
             if counter.dec() == 0:
-                values = list(map(lambda p: p.value if p in promises else p, values_or_promises))
                 all_promise.fulfill(values)
 
-        for p in promises:
-            cls.promisify(p).done(handle_success, all_promise.reject)
+        for i, p in enumerate(promises):
+            p.done(functools.partial(handle_success, i), all_promise.reject)
 
         return all_promise
 
