@@ -16,7 +16,15 @@ install:
   fi
 - pip install -e .
 script:
-- flake8
 - py.test --cov=promise tests
 after_success:
 - coveralls
+matrix:
+  fast_finish: true
+  include:
+  - python: '2.7'
+    script: flake8
+  - python: '3.5'
+    script: |
+      pip install mypy-lang
+      mypy promise/

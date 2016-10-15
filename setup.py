@@ -26,5 +26,8 @@ setup(
 
     keywords='concurrent future deferred promise',
     packages=["promise"],
+    install_requires=[
+        'typing',
+    ],
     tests_require=['pytest>=2.7.3', 'futures'],
 )
