@@ -398,15 +398,16 @@ class Promise(object):
         In other words, this turns an list of promises for values
         into a promise for a list of values.
         """
-        if len(values_or_promises) == 0:
+        _len = len(values_or_promises)
+        if _len == 0:
             return cls.fulfilled(values_or_promises)
 
         promises = (cls.promisify(v_or_p) if is_thenable(v_or_p) else cls.resolve(v_or_p) for
                     v_or_p in values_or_promises)
 
         all_promise = cls()
-        counter = CountdownLatch(len(values_or_promises))
-        values = [None] * len(values_or_promises)
+        counter = CountdownLatch(_len)
+        values = [None] * _len
 
         def handle_success(original_position, value):
             values[original_position] = value
