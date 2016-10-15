@@ -2,7 +2,7 @@ import functools
 from threading import Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
 
-from typing import Callable, Optional, Iterator, Any, Dict, Tuple  # flake8: noqa
+from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flake8: noqa
 
 
 class CountdownLatch(object):
@@ -106,6 +106,7 @@ class Promise(object):
         return p
 
     def fulfill(self, x):
+        # type: (Promise, Any) -> None
         """
         Fulfill the promise with a given value.
         """
@@ -123,6 +124,7 @@ class Promise(object):
     resolve = fulfilled
 
     def _fulfill(self, value):
+        # type: (Promise, Any) -> None
         with self._cb_lock:
             if self._state != self.PENDING:
                 return
@@ -150,6 +152,7 @@ class Promise(object):
                 pass
 
     def reject(self, reason):
+        # type: (Promise, Exception) -> None
         """
         Reject this promise for a given reason.
         """
@@ -294,14 +297,13 @@ class Promise(object):
             if failure is not None:
                 self.add_errback(failure)
 
-    def done_all(self, *handlers):
+    def done_all(self, handlers=None):
+        # type: (Promise, List[Callable]) -> List[Promise]
         """
         :type handlers: list[(Any) -> object] | list[((Any) -> object, (Any) -> object)]
         """
-        if len(handlers) == 0:
-            return
-        elif len(handlers) == 1 and isinstance(handlers[0], list):
-            handlers = handlers[0]
+        if not handlers:
+            return []
 
         for handler in handlers:
             if isinstance(handler, tuple):
@@ -376,7 +378,8 @@ class Promise(object):
 
         return ret
 
-    def then_all(self, *handlers):
+    def then_all(self, handlers=None):
+        # type: (Promise, List[Callable]) -> List[Promise]
         """
         Utility function which calls 'then' for each handler provided. Handler can either
         be a function in which case it is used as success handler, or a tuple containing
@@ -385,12 +388,10 @@ class Promise(object):
         :param handlers
         :rtype : list[Promise]
         """
-        if len(handlers) == 0:
+        if not handlers:
             return []
-        elif len(handlers) == 1 and isinstance(handlers[0], list):
-            handlers = handlers[0]
 
-        promises = []
+        promises = [] # type: List[Promise]
 
         for handler in handlers:
             if isinstance(handler, tuple):
@@ -444,8 +445,8 @@ class Promise(object):
         if isinstance(obj, cls):
             return obj
 
-        add_done_callback = get_done_callback(obj)
-        if callable(add_done_callback):  # type: ignore
+        add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
+        if callable(add_done_callback):
             promise = cls()
             add_done_callback(_process_future_result(promise))
             return promise

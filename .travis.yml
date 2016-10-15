@@ -27,4 +27,4 @@ matrix:
   - python: '3.5'
     script: |
       pip install mypy-lang
-      mypy promise/
+      mypy promise/  --check-untyped-defs

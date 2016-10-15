@@ -336,7 +336,7 @@ def test_done_all():
 
     p = Promise()
     p.done_all()
-    p.done_all((inc, dec))
+    p.done_all([(inc, dec)])
     p.done_all([
         (inc, dec),
         (inc, dec),
@@ -348,7 +348,8 @@ def test_done_all():
 
     p = Promise()
     p.done_all()
-    p.done_all((inc, dec))
+    p.done_all([inc])
+    p.done_all([(inc, dec)])
     p.done_all([
         (inc, dec),
         {'success': inc, 'failure': dec},
@@ -366,11 +367,11 @@ def test_then_all():
         {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
     ]
 
-    results = p.then_all() + p.then_all(((lambda x: x * x), (lambda r: 1))) + p.then_all(handlers)
+    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.fulfill(4)
 
-    assert [r.value for r in results] == [16, 16, 8]
+    assert [r.value for r in results] == [4, 16, 16, 8]
 
     p = Promise()
 
@@ -379,7 +380,7 @@ def test_then_all():
         {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
     ]
 
-    results = p.then_all() + p.then_all(((lambda x: x * x), (lambda r: 1))) + p.then_all(handlers)
+    results = p.then_all() + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.reject(Exception())
 
