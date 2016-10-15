@@ -40,13 +40,20 @@ class DelayedRejection(Thread):
 
 
 class FakeThenPromise():
-    def then(self, s=None, f=None):
-        raise Exception("FakeThenPromise raises in 'then'")
+    def __init__(self, raises=True):
+        self.raises = raises
 
+    def then(self, s=None, f=None):
+        if self.raises:
+            raise Exception("FakeThenPromise raises in 'then'")
 
 class FakeDonePromise():
+    def __init__(self, raises=True):
+        self.raises = raises
+
     def done(self, s=None, f=None):
-        raise Exception("FakeDonePromise raises in 'done'")
+        if self.raises:
+            raise Exception("FakeDonePromise raises in 'done'")
 
 
 def df(value, dtime):
@@ -336,7 +343,7 @@ def test_done_all():
 
     p = Promise()
     p.done_all()
-    p.done_all((inc, dec))
+    p.done_all([(inc, dec)])
     p.done_all([
         (inc, dec),
         (inc, dec),
@@ -348,7 +355,8 @@ def test_done_all():
 
     p = Promise()
     p.done_all()
-    p.done_all((inc, dec))
+    p.done_all([inc])
+    p.done_all([(inc, dec)])
     p.done_all([
         (inc, dec),
         {'success': inc, 'failure': dec},
@@ -366,11 +374,11 @@ def test_then_all():
         {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
     ]
 
-    results = p.then_all() + p.then_all(((lambda x: x * x), (lambda r: 1))) + p.then_all(handlers)
+    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.fulfill(4)
 
-    assert [r.value for r in results] == [16, 16, 8]
+    assert [r.value for r in results] == [4, 16, 16, 8]
 
     p = Promise()
 
@@ -379,7 +387,7 @@ def test_then_all():
         {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
     ]
 
-    results = p.then_all() + p.then_all(((lambda x: x * x), (lambda r: 1))) + p.then_all(handlers)
+    results = p.then_all() + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.reject(Exception())
 
@@ -390,6 +398,14 @@ def test_do_resolve():
     p1 = Promise(lambda resolve, reject: resolve(0))
     assert p1.is_fulfilled
     assert p1.value == 0
+
+
+def test_do_resolve_fail_on_call():
+    def raises(resolve, reject):
+        raise Exception('Fails')
+    p1 = Promise(raises)
+    assert not p1.is_fulfilled
+    assert str(p1.reason) == 'Fails'
 
 
 def test_catch():
@@ -436,6 +452,12 @@ def test_promisify_promise(promisify):
 
 
 def test_promisify_then_object(promisify):
+    promise = FakeThenPromise(raises=False)
+    p = promisify(promise)
+    assert isinstance(p, Promise)
+
+
+def test_promisify_then_object_exception(promisify):
     promise = FakeThenPromise()
     with pytest.raises(Exception) as excinfo:
         promisify(promise)
@@ -443,6 +465,12 @@ def test_promisify_then_object(promisify):
 
 
 def test_promisify_done_object(promisify):
+    promise = FakeDonePromise(raises=False)
+    p = promisify(promise)
+    assert isinstance(p, Promise)
+
+
+def test_promisify_done_object_exception(promisify):
     promise = FakeDonePromise()
     with pytest.raises(Exception) as excinfo:
         promisify(promise)

@@ -1,14 +1,20 @@
 try:
-    from asyncio import Future, iscoroutine, ensure_future
+    from asyncio import Future, iscoroutine, ensure_future  # type: ignore
 except ImportError:
-    class Future:
+    class Future:  # type: ignore
         def __init__(self):
             raise Exception("You need asyncio for using Futures")
 
-    def ensure_future():
+        def set_result(self):
+            raise Exception("You need asyncio for using Futures")
+
+        def set_exception(self):
+            raise Exception("You need asyncio for using Futures")
+
+    def ensure_future():  # type: ignore
         raise Exception("ensure_future needs asyncio for executing")
 
-    def iscoroutine(obj):
+    def iscoroutine(obj):  # type: ignore
         return False
 
 try:
