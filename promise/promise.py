@@ -6,6 +6,7 @@ from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flak
 
 
 class CountdownLatch(object):
+    __slots__ = ('_lock', 'count')
 
     def __init__(self, count):
         # type: (CountdownLatch, int) -> None
@@ -16,7 +17,7 @@ class CountdownLatch(object):
     def dec(self):
         # type: (CountdownLatch) -> int
         with self._lock:
-            assert self.count > 0, "count needs to be greater or equals to 0. Got: %s" % self._count
+            assert self.count > 0, "count needs to be greater or equals to 0. Got: %s" % self.count
             self.count -= 1
             # Return inside lock to return the correct value,
             # otherwise an other thread could already have
@@ -30,6 +31,8 @@ class Promise(object):
     Promises/A+ specification and test suite:
     http://promises-aplus.github.io/promises-spec/
     """
+
+    __slots__ = ('_state', '_value', '_reason', '_cb_lock', '_callbacks', '_errbacks', '_event', '_future')
 
     # These are the potential states of a promise
     PENDING = -1
