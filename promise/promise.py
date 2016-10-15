@@ -11,22 +11,17 @@ class CountdownLatch(object):
         # type: (CountdownLatch, int) -> None
         assert count >= 0, "count needs to be greater or equals to 0. Got: %s" % count
         self._lock = RLock()
-        self._count = count
+        self.count = count
 
     def dec(self):
         # type: (CountdownLatch) -> int
         with self._lock:
-            assert self._count > 0, "count needs to be greater or equals to 0. Got: %s" % self._count
-            self._count -= 1
+            assert self.count > 0, "count needs to be greater or equals to 0. Got: %s" % self._count
+            self.count -= 1
             # Return inside lock to return the correct value,
             # otherwise an other thread could already have
             # decremented again.
-            return self._count
-
-    @property
-    def count(self):
-        # type: (CountdownLatch) -> int
-        return self._count
+            return self.count
 
 
 class Promise(object):
@@ -73,21 +68,8 @@ class Promise(object):
         return self._future
 
     def do_resolve(self, fn):
-        self._done = False
-
-        def resolve_fn(x):
-            if self._done:
-                return
-            self._done = True
-            self.fulfill(x)
-
-        def reject_fn(x):
-            if self._done:
-                return
-            self._done = True
-            self.reject(x)
         try:
-            fn(resolve_fn, reject_fn)
+            fn(self.fulfill, self.reject)
         except Exception as e:
             self.reject(e)
 
