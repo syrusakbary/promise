@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from promise import Promise, promisify
+from promise import Promise, promisify, is_thenable
 
 
 @pytest.mark.asyncio
@@ -15,6 +15,15 @@ async def test_promisify_coroutine():
         return True
 
     assert await promisify(my_coroutine())
+
+
+@pytest.mark.asyncio
+async def test_coroutine_is_thenable():
+    async def my_coroutine():
+        await asyncio.sleep(.01)
+        return True
+
+    assert is_thenable(my_coroutine())
 
 
 @pytest.mark.asyncio

@@ -497,4 +497,6 @@ def is_thenable(obj):
     """
     return isinstance(obj, Promise) or is_future(obj) or (
         hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
-        hasattr(obj, "then") and callable(getattr(obj, "then")))
+        hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
+        iscoroutine(obj))
+
