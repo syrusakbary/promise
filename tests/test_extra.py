@@ -108,6 +108,11 @@ def test_exceptions():
     with pytest.raises(Exception) as excinfo:
         p2.get()
 
+    p3 = Promise.resolve('a').then(throws)
+    with pytest.raises(AssertionError) as assert_exc:
+        p3.get()
+    assert hasattr(assert_exc, 'traceback')
+
 
 def test_fake_promise():
     p = Promise()

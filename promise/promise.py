@@ -145,6 +145,11 @@ class Promise(object):
                                                "Got %s" % reason)
 
         with self._cb_lock:
+            import sys
+            e_type, value, traceback = sys.exc_info()
+            if e_type:
+                reason.traceback = traceback
+
             if self.state != self.PENDING:
                 return
 
@@ -197,7 +202,7 @@ class Promise(object):
             raise ValueError("Value not available, promise is still pending")
         elif self.state == self.FULFILLED:
             return self.value
-        raise self.reason
+        raise type(self.reason), self.reason, getattr(self.reason, 'traceback', None)
 
     def wait(self, timeout=None):
         # type: (Promise, int) -> None
@@ -211,7 +216,7 @@ class Promise(object):
     def add_callback(self, f):
         # type: (Promise, Callable) -> None
         """
-        Add a callback for when this promis is fulfilled.  Note that
+        Add a callback for when this promise is fulfilled.  Note that
         if you intend to use the value of the promise somehow in
         the callback, it is more convenient to use the 'then' method.
         """
