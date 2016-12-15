@@ -1,7 +1,7 @@
 import functools
 from threading import Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
-
+from future.utils import raise_
 from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flake8: noqa
 
 
@@ -202,7 +202,8 @@ class Promise(object):
             raise ValueError("Value not available, promise is still pending")
         elif self.state == self.FULFILLED:
             return self.value
-        raise type(self.reason), self.reason, getattr(self.reason, 'traceback', None)
+
+        raise_(type(self.reason), self.reason, getattr(self.reason, 'traceback', None))
 
     def wait(self, timeout=None):
         # type: (Promise, int) -> None
