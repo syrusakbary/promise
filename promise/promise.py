@@ -1,7 +1,7 @@
 import functools
 from threading import Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
-
+from six import reraise as raise_
 from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flake8: noqa
 
 
@@ -145,6 +145,11 @@ class Promise(object):
                                                "Got %s" % reason)
 
         with self._cb_lock:
+            import sys
+            _, __, tb = sys.exc_info()
+            if tb is not None and not hasattr(reason, '__traceback__'):
+                reason.__traceback__ = tb
+
             if self.state != self.PENDING:
                 return
 
@@ -197,7 +202,8 @@ class Promise(object):
             raise ValueError("Value not available, promise is still pending")
         elif self.state == self.FULFILLED:
             return self.value
-        raise self.reason
+
+        raise_(type(self.reason), self.reason, getattr(self.reason, '__traceback__', None))
 
     def wait(self, timeout=None):
         # type: (Promise, int) -> None
@@ -211,7 +217,7 @@ class Promise(object):
     def add_callback(self, f):
         # type: (Promise, Callable) -> None
         """
-        Add a callback for when this promis is fulfilled.  Note that
+        Add a callback for when this promise is fulfilled.  Note that
         if you intend to use the value of the promise somehow in
         the callback, it is more convenient to use the 'then' method.
         """
