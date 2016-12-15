@@ -146,9 +146,9 @@ class Promise(object):
 
         with self._cb_lock:
             import sys
-            e_type, value, traceback = sys.exc_info()
-            if e_type:
-                reason.traceback = traceback
+            _, __, tb = sys.exc_info()
+            if tb is not None and not hasattr(reason, '__traceback__'):
+                reason.__traceback__ = tb
 
             if self.state != self.PENDING:
                 return
@@ -203,7 +203,7 @@ class Promise(object):
         elif self.state == self.FULFILLED:
             return self.value
 
-        raise_(type(self.reason), self.reason, getattr(self.reason, 'traceback', None))
+        raise_(type(self.reason), self.reason, getattr(self.reason, '__traceback__', None))
 
     def wait(self, timeout=None):
         # type: (Promise, int) -> None
