@@ -1,7 +1,7 @@
 import functools
 from threading import Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
-from future.utils import raise_
+from six import reraise as raise_
 from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flake8: noqa
 
 
