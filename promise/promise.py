@@ -460,13 +460,12 @@ class Promise(object):
         if not m:
             return cls.fulfilled({})
 
-        keys, values = zip(*m.items())
         dict_type = type(m)
 
         def handle_success(resolved_values):
-            return dict_type(zip(keys, resolved_values))
+            return dict_type(zip(m.keys(), resolved_values))
 
-        return cls.all(values).then(handle_success)
+        return cls.all(m.values()).then(handle_success)
 
 
 promisify = Promise.promisify

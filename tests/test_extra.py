@@ -396,8 +396,8 @@ def test_then_all():
 
 def test_do_resolve():
     p1 = Promise(lambda resolve, reject: resolve(0))
+    assert p1.get() == 0
     assert p1.is_fulfilled
-    assert p1.value == 0
 
 
 def test_do_resolve_fail_on_call():
@@ -413,8 +413,8 @@ def test_catch():
     p2 = p1.then(lambda value: 1 / value) \
            .catch(lambda e: e) \
            .then(lambda e: type(e))
+    assert p2.get() == ZeroDivisionError
     assert p2.is_fulfilled
-    assert p2.value == ZeroDivisionError
 
 
 def test_is_thenable_promise():
@@ -482,8 +482,8 @@ def test_promisify_future(promisify):
     promise = promisify(future)
     assert promise.is_pending
     future.set_result(1)
+    assert promise.get() == 1
     assert promise.is_fulfilled
-    assert promise.value == 1
 
 
 def test_promisify_future_rejected(promisify):
