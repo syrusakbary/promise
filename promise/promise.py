@@ -1,5 +1,5 @@
 import functools
-from threading import Event, RLock
+from threading import Thread, Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
 
 from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flake8: noqa
@@ -32,7 +32,7 @@ class Promise(object):
     http://promises-aplus.github.io/promises-spec/
     """
 
-    __slots__ = ('state', 'value', 'reason', '_cb_lock', '_callbacks', '_errbacks', '_event', '_future')
+    __slots__ = ('state', 'value', 'reason', '_cb_lock', '_callbacks', '_errbacks', '_event', '_future', '_thread')
 
     # These are the potential states of a promise
     PENDING = -1
@@ -53,7 +53,8 @@ class Promise(object):
         self._event = Event()
         self._future = None   # type: Optional[Future]
         if fn:
-            self.do_resolve(fn)
+            self._thread = Thread(target=self.do_resolve, args=(fn,))
+            self._thread.start()
 
     def __iter__(self):
         # type: (Promise) -> Iterator
