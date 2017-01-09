@@ -1,11 +1,8 @@
 import time
 import concurrent.futures
 from promise import Promise
+from operator import mul
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=40000);
-
-
-def combine(r,n):
-    return r * n
 
 
 def promise_factorial(n):
@@ -13,7 +10,7 @@ def promise_factorial(n):
         return 1
     time.sleep(.02)
     a = executor.submit(promise_factorial, n - 1)
-    return Promise.promisify(a).then(lambda r: combine(r, n))
+    return Promise.promisify(a).then(lambda r: mul(r, n))
 
 
 def test_factorial():
