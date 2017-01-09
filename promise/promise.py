@@ -1,8 +1,8 @@
-import functools
+from functools import partial
 from threading import Thread, Event, RLock
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
 
-from typing import Callable, Optional, Iterator, Any, Dict, Tuple, Union  # flake8: noqa
+from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
 
 
 class CountdownLatch(object):
@@ -143,7 +143,7 @@ class Promise(object):
         Reject this promise for a given reason.
         """
         assert isinstance(reason, Exception), ("The reject function needs to be called with an Exception. "
-                                               "Got %s" % reason)
+                                               "Got {}".format(reason))
 
         with self._cb_lock:
             if self.state != self.PENDING:
@@ -216,7 +216,7 @@ class Promise(object):
         if you intend to use the value of the promise somehow in
         the callback, it is more convenient to use the 'then' method.
         """
-        assert callable(f), "A function needs to be passed into add_callback. Got: %s" % f
+        assert callable(f), "A function needs to be passed into add_callback. Got: {}".format(f)
 
         with self._cb_lock:
             if self.state == self.PENDING:
@@ -237,7 +237,7 @@ class Promise(object):
         somehow in the callback, it is more convenient to use
         the 'then' method.
         """
-        assert callable(f), "A function needs to be passed into add_errback. Got: %s" % f
+        assert callable(f), "A function needs to be passed into add_errback. Got: {}".format(f)
 
         with self._cb_lock:
             if self.state == self.PENDING:
@@ -411,7 +411,7 @@ class Promise(object):
                 all_promise.fulfill(values)
 
         for i, p in enumerate(promises):
-            p.done(functools.partial(handle_success, i), all_promise.reject)  # type: ignore
+            p.done(partial(handle_success, i), all_promise.reject)  # type: ignore
 
         return all_promise
 
