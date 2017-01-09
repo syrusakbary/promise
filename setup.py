@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='promise',
-    version='1.0.1',
+    version='1.0.2',
     description='Promises/A+ implementation for Python',
     long_description=open('README.rst').read(),
     url='https://github.com/syrusakbary/promise',
