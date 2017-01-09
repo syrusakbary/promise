@@ -1,5 +1,6 @@
 from functools import partial
 from threading import Thread, Event, RLock
+from sys import version_info
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
 
 from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
@@ -189,10 +190,13 @@ class Promise(object):
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
         return self.state == self.REJECTED
 
-    def get(self, timeout=float("Inf")):
+    def get(self, timeout=None):
         # type: (Promise, int) -> Any
         """Get the value of the promise, waiting if necessary."""
-        self.wait(timeout)
+        if timeout is None and version_info[0] == 2:
+            self.wait(float("Inf"))
+        else:
+            self.wait(timeout)
 
         if self.state == self.PENDING:
             raise ValueError("Value not available, promise is still pending")
@@ -200,7 +204,7 @@ class Promise(object):
             return self.value
         raise self.reason
 
-    def wait(self, timeout=float("Inf")):
+    def wait(self, timeout=None):
         # type: (Promise, int) -> None
         """
         An implementation of the wait method which doesn't involve
