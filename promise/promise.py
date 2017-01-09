@@ -189,7 +189,7 @@ class Promise(object):
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
         return self.state == self.REJECTED
 
-    def get(self, timeout=None):
+    def get(self, timeout=float("Inf")):
         # type: (Promise, int) -> Any
         """Get the value of the promise, waiting if necessary."""
         self.wait(timeout)
@@ -200,7 +200,7 @@ class Promise(object):
             return self.value
         raise self.reason
 
-    def wait(self, timeout=None):
+    def wait(self, timeout=float("Inf")):
         # type: (Promise, int) -> None
         """
         An implementation of the wait method which doesn't involve
