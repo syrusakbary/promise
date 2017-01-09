@@ -68,7 +68,7 @@ Returns a promise for a list.  If it is called with a single argument then this 
 p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
        .then(lambda res: res == ['a', 'b', 'c'])
 
-assert p.value is True
+assert p.get() is True
 ```
 
 #### Promise.promisify(obj)
