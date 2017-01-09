@@ -191,7 +191,7 @@ class Promise(object):
         return self.state == self.REJECTED
 
     def get(self, timeout=None):
-        # type: (Promise, int) -> Any
+        # type: (Promise, float) -> Any
         """Get the value of the promise, waiting if necessary."""
         if timeout is None and version_info[0] == 2:
             self.wait(float("Inf"))
@@ -205,7 +205,7 @@ class Promise(object):
         raise self.reason
 
     def wait(self, timeout=None):
-        # type: (Promise, int) -> None
+        # type: (Promise, float) -> None
         """
         An implementation of the wait method which doesn't involve
         polling but instead utilizes a "real" synchronization
