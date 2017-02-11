@@ -468,8 +468,6 @@ def test_3_2_6_3_if_rejected():
     assert 10 ==  pending.get()
     pr.wait()
     assert pr.is_fulfilled
-    print pr
-    print pr.get(), pending
     assert 10 ==  pr.get()
 
     p2 = Promise()
