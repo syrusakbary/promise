@@ -76,20 +76,22 @@ def dr(reason, dtime):
 def test_fulfilled():
     p = Promise.fulfilled(4)
     assert p.is_fulfilled
-    assert p.value == 4
+    assert p.get() == 4
 
 
 def test_rejected():
     p = Promise.rejected(Exception("Static rejected"))
     assert p.is_rejected
-    assert_exception(p.reason, Exception, "Static rejected")
+    with raises(Exception) as exc_info:
+        p.get()
+    assert str(exc_info.value) == "Static rejected"
 
 
 # Fulfill
 def test_fulfill_self():
     p = Promise()
     with raises(TypeError) as excinfo:
-        p.fulfill(p)
+        p.fulfill(p).get()
 
 
 # Exceptions
