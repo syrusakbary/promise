@@ -6,7 +6,7 @@ IS_PY3 = sys.hexversion>=0x03000000
 tests_require = [
     'pytest>=2.7.3',
     'pytest-cov',
-    'coveralls'
+    'coveralls',
     'futures',
     'pytest-benchmark'
 ]
