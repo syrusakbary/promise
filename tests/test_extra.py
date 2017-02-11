@@ -1,7 +1,7 @@
 # This exercises some capabilities above and beyond
 # the Promises/A+ test suite
-import time
-import pytest
+from time import sleep
+from pytest import raises, fixture
 
 from promise import (
     Promise,
@@ -23,7 +23,7 @@ class DelayedFulfill(Thread):
         Thread.__init__(self)
 
     def run(self):
-        time.sleep(self.delay)
+        sleep(self.delay)
         self.promise.fulfill(self.value)
 
 
@@ -35,7 +35,7 @@ class DelayedRejection(Thread):
         Thread.__init__(self)
 
     def run(self):
-        time.sleep(self.delay)
+        sleep(self.delay)
         self.promise.reject(self.reason)
 
 
@@ -76,20 +76,22 @@ def dr(reason, dtime):
 def test_fulfilled():
     p = Promise.fulfilled(4)
     assert p.is_fulfilled
-    assert p.value == 4
+    assert p.get() == 4
 
 
 def test_rejected():
     p = Promise.rejected(Exception("Static rejected"))
     assert p.is_rejected
-    assert_exception(p.reason, Exception, "Static rejected")
+    with raises(Exception) as exc_info:
+        p.get()
+    assert str(exc_info.value) == "Static rejected"
 
 
 # Fulfill
 def test_fulfill_self():
     p = Promise()
-    with pytest.raises(TypeError) as excinfo:
-        p.fulfill(p)
+    with raises(TypeError) as excinfo:
+        p.fulfill(p).get()
 
 
 # Exceptions
@@ -105,7 +107,7 @@ def test_exceptions():
     p2.add_errback(throws)
     p2.reject(Exception())
 
-    with pytest.raises(Exception) as excinfo:
+    with raises(Exception) as excinfo:
         p2.get()
 
 
@@ -249,7 +251,7 @@ def test_promise_all_if():
 
 
 # promise_for_dict
-@pytest.fixture(params=[
+@fixture(params=[
     Promise.for_dict,
     free_promise_for_dict,
 ])
@@ -396,8 +398,8 @@ def test_then_all():
 
 def test_do_resolve():
     p1 = Promise(lambda resolve, reject: resolve(0))
+    assert p1.get() == 0
     assert p1.is_fulfilled
-    assert p1.value == 0
 
 
 def test_do_resolve_fail_on_call():
@@ -413,8 +415,8 @@ def test_catch():
     p2 = p1.then(lambda value: 1 / value) \
            .catch(lambda e: e) \
            .then(lambda e: type(e))
+    assert p2.get() == ZeroDivisionError
     assert p2.is_fulfilled
-    assert p2.value == ZeroDivisionError
 
 
 def test_is_thenable_promise():
@@ -441,7 +443,7 @@ def test_is_thenable_simple_object():
     assert not is_thenable(object())
 
 
-@pytest.fixture(params=[free_promisify, Promise.promisify])
+@fixture(params=[free_promisify, Promise.promisify])
 def promisify(request):
     return request.param
 
@@ -459,7 +461,7 @@ def test_promisify_then_object(promisify):
 
 def test_promisify_then_object_exception(promisify):
     promise = FakeThenPromise()
-    with pytest.raises(Exception) as excinfo:
+    with raises(Exception) as excinfo:
         promisify(promise)
     assert str(excinfo.value) == "FakeThenPromise raises in 'then'"
 
@@ -472,7 +474,7 @@ def test_promisify_done_object(promisify):
 
 def test_promisify_done_object_exception(promisify):
     promise = FakeDonePromise()
-    with pytest.raises(Exception) as excinfo:
+    with raises(Exception) as excinfo:
         promisify(promise)
     assert str(excinfo.value) == "FakeDonePromise raises in 'done'"
 
@@ -482,8 +484,8 @@ def test_promisify_future(promisify):
     promise = promisify(future)
     assert promise.is_pending
     future.set_result(1)
+    assert promise.get() == 1
     assert promise.is_fulfilled
-    assert promise.value == 1
 
 
 def test_promisify_future_rejected(promisify):
@@ -496,7 +498,7 @@ def test_promisify_future_rejected(promisify):
 
 
 def test_promisify_object(promisify):
-    with pytest.raises(TypeError) as excinfo:
+    with raises(TypeError) as excinfo:
         promisify(object())
     assert str(excinfo.value) == "Object is not a Promise like object."
 

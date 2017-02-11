@@ -68,7 +68,7 @@ Returns a promise for a list.  If it is called with a single argument then this 
 p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
        .then(lambda res: res == ['a', 'b', 'c'])
 
-assert p.value is True
+assert p.get() is True
 ```
 
 #### Promise.promisify(obj)
@@ -112,6 +112,27 @@ The same semantics as `.then` except that it does not return a promise and any e
 ### is_thenable(obj)
 
 This function checks if the `obj` is a `Promise`, or could be `promisify`ed.
+
+
+# Contributing
+
+After cloning this repo, ensure dependencies are installed by running:
+
+```sh
+pip install .[test]
+```
+
+After developing, the full test suite can be evaluated by running:
+
+```sh
+py.test tests --cov=promise --benchmark-skip # Use -v -s for verbose mode
+```
+
+You can also run the benchmarks with:
+
+```sh
+py.test tests --benchmark-only
+```
 
 
 # Notes

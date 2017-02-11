@@ -1,4 +1,19 @@
+import sys
 from setuptools import setup
+
+IS_PY3 = sys.hexversion>=0x03000000
+
+tests_require = [
+    'pytest>=2.7.3',
+    'pytest-cov',
+    'coveralls',
+    'futures',
+    'pytest-benchmark'
+]
+if IS_PY3:
+    tests_require += [
+        'pytest-asyncio'
+    ]
 
 setup(
     name='promise',
@@ -26,8 +41,11 @@ setup(
 
     keywords='concurrent future deferred promise',
     packages=["promise"],
+    extras_require={
+        'test': tests_require,
+    },
     install_requires=[
         'typing',
     ],
-    tests_require=['pytest>=2.7.3', 'futures'],
+    tests_require=tests_require,
 )

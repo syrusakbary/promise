@@ -1,20 +1,20 @@
-import asyncio
-import pytest
-import time
+from asyncio import coroutine
+from pytest import mark
+from time import sleep
 from promise import Promise
 
 
-@pytest.mark.asyncio
-@asyncio.coroutine
+@mark.asyncio
+@coroutine
 def test_await():
     yield from Promise.resolve(True)
 
 
-@pytest.mark.asyncio
-@asyncio.coroutine
+@mark.asyncio
+@coroutine
 def test_await_time():
     def resolve_or_reject(resolve, reject):
-        time.sleep(.1)
+        sleep(.1)
         resolve(True)
     p = Promise(resolve_or_reject)
     assert p.get() is True
