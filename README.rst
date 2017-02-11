@@ -88,7 +88,7 @@ replaced by their fulfilled values. e.g.
     p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
            .then(lambda res: res == ['a', 'b', 'c'])
 
-    assert p.value is True
+    assert p.get() is True
 
 Promise.promisify(obj)
 ^^^^^^^^^^^^^^^^^^^^^^
