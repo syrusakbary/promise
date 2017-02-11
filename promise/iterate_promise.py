@@ -3,6 +3,7 @@
 
 def iterate_promise(promise):
     if not promise.is_fulfilled:
-        yield from promise.future
+        for item in promise.future:
+            yield item
     assert promise.is_fulfilled
     return promise.get()
