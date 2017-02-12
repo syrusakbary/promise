@@ -1,9 +1,17 @@
+from enum import Enum
 from functools import partial
 from threading import Event, RLock
 from sys import version_info
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
 
 from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
+
+
+class States(Enum):
+    # These are the potential states of a promise
+    PENDING = -1
+    REJECTED = 0
+    FULFILLED = 1
 
 
 class CountdownLatch(object):
@@ -36,17 +44,12 @@ class Promise(object):
     __slots__ = ('state', 'value', 'reason', '_cb_lock', '_callbacks',
                  '_errbacks', '_event', '_future')
 
-    # These are the potential states of a promise
-    PENDING = -1
-    REJECTED = 0
-    FULFILLED = 1
-
     def __init__(self, fn=None):
         # type: (Promise, Callable) -> None
         """
         Initialize the Promise into a pending state.
         """
-        self.state = self.PENDING  # type: int
+        self.state = States.PENDING  # type: int
         self.value = None  # type: Any
         self.reason = None  # type: Optional[Exception]
         self._cb_lock = RLock()
@@ -113,11 +116,11 @@ class Promise(object):
     def _fulfill(self, value):
         # type: (Promise, Any) -> None
         with self._cb_lock:
-            if self.state != self.PENDING:
+            if self.state != States.PENDING:
                 return
 
             self.value = value
-            self.state = self.FULFILLED
+            self.state = States.FULFILLED
 
             callbacks = self._callbacks
             # We will never call these callbacks again, so allow
@@ -148,11 +151,11 @@ class Promise(object):
             "Got {}".format(reason))
 
         with self._cb_lock:
-            if self.state != self.PENDING:
+            if self.state != States.PENDING:
                 return
 
             self.reason = reason
-            self.state = self.REJECTED
+            self.state = States.REJECTED
 
             errbacks = self._errbacks
             # We will never call these errbacks again, so allow
@@ -177,19 +180,19 @@ class Promise(object):
     def is_pending(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise is still pending. Could be wrong the moment the function returns."""
-        return self.state == self.PENDING
+        return self.state == States.PENDING
 
     @property
     def is_fulfilled(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been fulfilled. Could be wrong the moment the function returns."""
-        return self.state == self.FULFILLED
+        return self.state == States.FULFILLED
 
     @property
     def is_rejected(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
-        return self.state == self.REJECTED
+        return self.state == States.REJECTED
 
     def get(self, timeout=None):
         # type: (Promise, float) -> Any
@@ -199,9 +202,9 @@ class Promise(object):
         else:
             self.wait(timeout)
 
-        if self.state == self.PENDING:
+        if self.state == States.PENDING:
             raise ValueError("Value not available, promise is still pending")
-        elif self.state == self.FULFILLED:
+        elif self.state == States.FULFILLED:
             return self.value
         raise self.reason
 
@@ -226,14 +229,14 @@ class Promise(object):
         ), "A function needs to be passed into add_callback. Got: {}".format(f)
 
         with self._cb_lock:
-            if self.state == self.PENDING:
+            if self.state == States.PENDING:
                 self._callbacks.append(f)
                 return
 
         # This is a correct performance optimization in case of concurrency.
         # State can never change once it is not PENDING anymore and is thus safe to read
         # without acquiring the lock.
-        if self.state == self.FULFILLED:
+        if self.state == States.FULFILLED:
             f(self.value)
 
     def add_errback(self, f):
@@ -249,14 +252,14 @@ class Promise(object):
         ), "A function needs to be passed into add_errback. Got: {}".format(f)
 
         with self._cb_lock:
-            if self.state == self.PENDING:
+            if self.state == States.PENDING:
                 self._errbacks.append(f)
                 return
 
         # This is a correct performance optimization in case of concurrency.
         # State can never change once it is not PENDING anymore and is thus safe to read
         # without acquiring the lock.
-        if self.state == self.REJECTED:
+        if self.state == States.REJECTED:
             f(self.reason)
 
     def catch(self, on_rejection):
