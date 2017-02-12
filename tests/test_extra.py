@@ -189,10 +189,10 @@ def test_promise_all_when():
     assert p1.is_fulfilled
     assert p2.is_fulfilled
     assert pl.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pl.value[0]
-    assert 10 == pl.value[1]
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pl.get()[0]
+    assert 10 == pl.get()[1]
 
 
 def test_promise_all_when_mixed_promises():
@@ -210,15 +210,15 @@ def test_promise_all_when_mixed_promises():
     assert p1.is_fulfilled
     assert p2.is_fulfilled
     assert pl.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert pl.value == [5, 32, 10, False, True]
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert pl.get() == [5, 32, 10, False, True]
 
 
 def test_promise_all_when_if_no_promises():
     pl = Promise.all([10, 32, False, True])
     assert pl.is_fulfilled
-    assert pl.value == [10, 32, False, True]
+    assert pl.get() == [10, 32, False, True]
 
 
 def test_promise_all_if():
@@ -242,12 +242,12 @@ def test_promise_all_if():
     assert p2.is_fulfilled
     assert pd1.is_fulfilled
     assert pd2.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pd1.value[0]
-    assert 5 == pd2.value[0]
-    assert 10 == pd1.value[1]
-    assert [] == pd3.value
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pd1.get()[0]
+    assert 5 == pd2.get()[0]
+    assert 10 == pd1.get()[1]
+    assert [] == pd3.get()
 
 
 # promise_for_dict
@@ -281,12 +281,12 @@ def test_dict_promise_when(promise_for_dict):
     assert p2.is_fulfilled
     assert pd1.is_fulfilled
     assert pd2.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pd1.value["a"]
-    assert 5 == pd2.value["a"]
-    assert 10 == pd1.value["b"]
-    assert {} == pd3.value
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pd1.get()["a"]
+    assert 5 == pd2.get()["a"]
+    assert 10 == pd1.get()["b"]
+    assert {} == pd3.get()
 
 
 def test_dict_promise_if(promise_for_dict):
@@ -305,10 +305,10 @@ def test_dict_promise_if(promise_for_dict):
     assert p1.is_fulfilled
     assert p2.is_fulfilled
     assert pd.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pd.value["a"]
-    assert 10 == pd.value["b"]
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pd.get()["a"]
+    assert 10 == pd.get()["b"]
 
 
 def test_done():
@@ -390,7 +390,7 @@ def test_then_all():
 
     p.fulfill(4)
 
-    assert [r.value for r in results] == [4, 16, 16, 8]
+    assert [r.get() for r in results] == [4, 16, 16, 8]
 
     p = Promise()
 
@@ -407,7 +407,7 @@ def test_then_all():
 
     p.reject(Exception())
 
-    assert [r.value for r in results] == [1, 1, 2]
+    assert [r.get() for r in results] == [1, 1, 2]
 
 
 def test_do_resolve():
