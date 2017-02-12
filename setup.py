@@ -1,19 +1,13 @@
 import sys
 from setuptools import setup
 
-IS_PY3 = sys.hexversion>=0x03000000
+IS_PY3 = sys.hexversion >= 0x03000000
 
 tests_require = [
-    'pytest>=2.7.3',
-    'pytest-cov',
-    'coveralls',
-    'futures',
-    'pytest-benchmark'
+    'pytest>=2.7.3', 'pytest-cov', 'coveralls', 'futures', 'pytest-benchmark'
 ]
 if IS_PY3:
-    tests_require += [
-        'pytest-asyncio'
-    ]
+    tests_require += ['pytest-asyncio']
 
 setup(
     name='promise',
@@ -38,7 +32,6 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'License :: OSI Approved :: MIT License',
     ],
-
     keywords='concurrent future deferred promise',
     packages=["promise"],
     extras_require={
@@ -47,5 +40,4 @@ setup(
     install_requires=[
         'typing',
     ],
-    tests_require=tests_require,
-)
+    tests_require=tests_require, )

@@ -2,7 +2,7 @@ from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from promise import Promise
 from operator import mul
-executor = ThreadPoolExecutor(max_workers=40000);
+executor = ThreadPoolExecutor(max_workers=40000)
 
 
 def promise_factorial(n):
