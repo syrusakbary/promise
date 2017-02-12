@@ -417,15 +417,17 @@ class Promise(object):
         counter = CountdownLatch(_len)
         values = [None] * _len  # type: List[Any]
 
-        def handle_success(original_position, value):
-            # type: (int, Any) -> None
-            values[original_position] = value
-            if counter.dec() == 0:
-                all_promise.fulfill(values)
+        def handle_success(original_position):
+            # type: (int) -> Callable
+            def ret(value):
+                values[original_position] = value
+                if counter.dec() == 0:
+                    all_promise.fulfill(values)
+
+            return ret
 
         for i, p in enumerate(promises):
-            p.done(partial(handle_success, i),
-                   all_promise.reject)  # type: ignore
+            p.done(handle_success(i), all_promise.reject)  # type: ignore
 
         return all_promise
 
