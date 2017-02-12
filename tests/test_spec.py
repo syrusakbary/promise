@@ -79,7 +79,7 @@ def test_3_2_1_2():
         testNonFunction(v)
 
     for v in nonFunctions:
-        assert "Error: " + str(v) ==  results[str(v)]
+        assert "Error: " + str(v) == results[str(v)]
 
 
 def test_3_2_2_1():
@@ -91,14 +91,14 @@ def test_3_2_2_1():
     c = Counter()
 
     def check(v, c):
-        assert v ==  5
+        assert v == 5
         c.tick()
 
     p1 = Promise()
     p2 = p1.then(lambda v: check(v, c))
     p1.fulfill(5)
     p2.wait()
-    assert 1 ==  c.value()
+    assert 1 == c.value()
 
 
 def test_3_2_2_2():
@@ -118,7 +118,7 @@ def test_3_2_2_2():
     except AssertionError:
         # This is expected
         pass
-    assert 1 ==  c.value()
+    assert 1 == c.value()
 
 
 def test_3_2_2_3():
@@ -132,8 +132,8 @@ def test_3_2_2_3():
     p2 = p1.then(lambda v: cf.tick(), lambda r: cr.tick())
     p1.reject(Exception("Error"))
     p2.wait()
-    assert 0 ==  cf.value()
-    assert 1 ==  cr.value()
+    assert 0 == cf.value()
+    assert 1 == cr.value()
 
 
 def test_3_2_3_1():
@@ -152,7 +152,7 @@ def test_3_2_3_1():
     p2 = p1.then(None, lambda r: check(r, c))
     p1.reject(Exception("Error"))
     p2.wait()
-    assert 1 ==  c.value()
+    assert 1 == c.value()
 
 
 def test_3_2_3_2():
@@ -172,7 +172,7 @@ def test_3_2_3_2():
     except AssertionError:
         # This is expected
         pass
-    assert 1 ==  c.value()
+    assert 1 == c.value()
 
 
 def test_3_2_3_3():
@@ -186,8 +186,8 @@ def test_3_2_3_3():
     p2 = p1.then(lambda v: cf.tick(), lambda r: cr.tick())
     p1.fulfill(5)
     p2.wait()
-    assert 0 ==  cr.value()
-    assert 1 ==  cf.value()
+    assert 0 == cr.value()
+    assert 1 == cf.value()
 
 
 def test_3_2_5_1_when():
@@ -207,9 +207,9 @@ def test_3_2_5_1_when():
     p1.fulfill(2)
     p2.wait()
     p3.wait()
-    assert 2 ==  len(order)
-    assert "p2" ==  order[0]
-    assert "p3" ==  order[1]
+    assert 2 == len(order)
+    assert "p2" == order[0]
+    assert "p3" == order[1]
 
 
 def test_3_2_5_1_if():
@@ -229,9 +229,9 @@ def test_3_2_5_1_if():
     p3 = p1.then(lambda v: add(order, "p3"))
     p2.wait()
     p3.wait()
-    assert 2 ==  len(order)
-    assert "p2" ==  order[0]
-    assert "p3" ==  order[1]
+    assert 2 == len(order)
+    assert "p2" == order[0]
+    assert "p3" == order[1]
 
 
 def test_3_2_5_2_when():
@@ -251,9 +251,9 @@ def test_3_2_5_2_when():
     p1.reject(Exception("Error"))
     p2.wait()
     p3.wait()
-    assert 2 ==  len(order)
-    assert "p2" ==  order[0]
-    assert "p3" ==  order[1]
+    assert 2 == len(order)
+    assert "p2" == order[0]
+    assert "p3" == order[1]
 
 
 def test_3_2_5_2_if():
@@ -273,9 +273,9 @@ def test_3_2_5_2_if():
     p3 = p1.then(None, lambda v: add(order, "p3"))
     p2.wait()
     p3.wait()
-    assert 2 ==  len(order)
-    assert "p2" ==  order[0]
-    assert "p3" ==  order[1]
+    assert 2 == len(order)
+    assert "p2" == order[0]
+    assert "p3" == order[1]
 
 
 def test_3_2_6_1():
@@ -288,12 +288,12 @@ def test_3_2_6_1():
     p1 = Promise()
     pf = p1.then(lambda v: v * v)
     p1.fulfill(5)
-    assert pf.get() ==  25
+    assert pf.get() == 25
 
     p2 = Promise()
     pr = p2.then(None, lambda r: 5)
     p2.reject(Exception("Error"))
-    assert 5 ==  pr.get()
+    assert 5 == pr.get()
 
 
 def test_3_2_6_2_when():
@@ -361,10 +361,10 @@ def test_3_2_6_3_when_fulfilled():
     pending.fulfill(5)
     pending.wait()
     assert pending.is_fulfilled
-    assert 5 ==  pending.get()
+    assert 5 == pending.get()
     pf.wait()
     assert pf.is_fulfilled
-    assert 5 ==  pf.get()
+    assert 5 == pf.get()
 
     p2 = Promise()
     bad = Promise()
@@ -396,10 +396,10 @@ def test_3_2_6_3_if_fulfilled():
     pf = p1.then(lambda r: pending)
     pending.wait()
     assert pending.is_fulfilled
-    assert 5 ==  pending.get()
+    assert 5 == pending.get()
     pf.wait()
     assert pf.is_fulfilled
-    assert 5 ==  pf.get()
+    assert 5 == pf.get()
 
     p2 = Promise()
     p2.fulfill(10)
@@ -430,10 +430,10 @@ def test_3_2_6_3_when_rejected():
     pending.fulfill(10)
     pending.wait()
     assert pending.is_fulfilled
-    assert 10 ==  pending.get()
+    assert 10 == pending.get()
     pr.wait()
     assert pr.is_fulfilled
-    assert 10 ==  pr.get()
+    assert 10 == pr.get()
 
     p2 = Promise()
     bad = Promise()
@@ -465,10 +465,10 @@ def test_3_2_6_3_if_rejected():
     pr = p1.then(None, lambda r: pending)
     pending.wait()
     assert pending.is_fulfilled
-    assert 10 ==  pending.get()
+    assert 10 == pending.get()
     pr.wait()
     assert pr.is_fulfilled
-    assert 10 ==  pr.get()
+    assert 10 == pr.get()
 
     p2 = Promise()
     p2.reject(Exception("Error"))
@@ -491,10 +491,10 @@ def test_3_2_6_4_pending():
     p1 = Promise()
     p2 = p1.then(5)
     p1.fulfill(10)
-    assert 10 ==  p1.get()
+    assert 10 == p1.get()
     p2.wait()
     assert p2.is_fulfilled
-    assert 10 ==  p2.get()
+    assert 10 == p2.get()
 
 
 def test_3_2_6_4_fulfilled():
@@ -505,10 +505,10 @@ def test_3_2_6_4_fulfilled():
     p1 = Promise()
     p1.fulfill(10)
     p2 = p1.then(5)
-    assert 10 ==  p1.get()
+    assert 10 == p1.get()
     p2.wait()
     assert p2.is_fulfilled
-    assert 10 ==  p2.get()
+    assert 10 == p2.get()
 
 
 def test_3_2_6_5_pending():

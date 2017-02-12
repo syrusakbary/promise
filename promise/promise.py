@@ -33,7 +33,8 @@ class Promise(object):
     http://promises-aplus.github.io/promises-spec/
     """
 
-    __slots__ = ('state', 'value', 'reason', '_cb_lock', '_callbacks', '_errbacks', '_event', '_future')
+    __slots__ = ('state', 'value', 'reason', '_cb_lock', '_callbacks',
+                 '_errbacks', '_event', '_future')
 
     # These are the potential states of a promise
     PENDING = -1
@@ -52,7 +53,7 @@ class Promise(object):
         self._callbacks = []  # type: List[Callable]
         self._errbacks = []  # type: List[Callable]
         self._event = Event()
-        self._future = None   # type: Optional[Future]
+        self._future = None  # type: Optional[Future]
         if fn:
             self.do_resolve(fn)
 
@@ -142,8 +143,9 @@ class Promise(object):
         """
         Reject this promise for a given reason.
         """
-        assert isinstance(reason, Exception), ("The reject function needs to be called with an Exception. "
-                                               "Got {}".format(reason))
+        assert isinstance(reason, Exception), (
+            "The reject function needs to be called with an Exception. "
+            "Got {}".format(reason))
 
         with self._cb_lock:
             if self.state != self.PENDING:
@@ -219,7 +221,9 @@ class Promise(object):
         if you intend to use the value of the promise somehow in
         the callback, it is more convenient to use the 'then' method.
         """
-        assert callable(f), "A function needs to be passed into add_callback. Got: {}".format(f)
+        assert callable(
+            f
+        ), "A function needs to be passed into add_callback. Got: {}".format(f)
 
         with self._cb_lock:
             if self.state == self.PENDING:
@@ -240,7 +244,9 @@ class Promise(object):
         somehow in the callback, it is more convenient to use
         the 'then' method.
         """
-        assert callable(f), "A function needs to be passed into add_errback. Got: {}".format(f)
+        assert callable(
+            f
+        ), "A function needs to be passed into add_errback. Got: {}".format(f)
 
         with self._cb_lock:
             if self.state == self.PENDING:
@@ -370,7 +376,7 @@ class Promise(object):
         if not handlers:
             return []
 
-        promises = [] # type: List[Promise]
+        promises = []  # type: List[Promise]
 
         for handler in handlers:
             if isinstance(handler, tuple):
@@ -400,8 +406,10 @@ class Promise(object):
         if _len == 0:
             return cls.fulfilled(values_or_promises)
 
-        promises = (cls.promisify(v_or_p) if is_thenable(v_or_p) else cls.resolve(v_or_p) for
-                    v_or_p in values_or_promises)  # type: Iterator[Promise]
+        promises = (
+            cls.promisify(v_or_p)
+            if is_thenable(v_or_p) else cls.resolve(v_or_p)
+            for v_or_p in values_or_promises)  # type: Iterator[Promise]
 
         all_promise = cls()  # type: Promise
         counter = CountdownLatch(_len)
@@ -414,7 +422,8 @@ class Promise(object):
                 all_promise.fulfill(values)
 
         for i, p in enumerate(promises):
-            p.done(partial(handle_success, i), all_promise.reject)  # type: ignore
+            p.done(partial(handle_success, i),
+                   all_promise.reject)  # type: ignore
 
         return all_promise
 
@@ -500,6 +509,5 @@ def is_thenable(obj):
     """
     return isinstance(obj, Promise) or is_future(obj) or (
         hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
-        hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
-        iscoroutine(obj))
-
+            hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
+                iscoroutine(obj))

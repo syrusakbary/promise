@@ -7,8 +7,7 @@ from promise import (
     Promise,
     is_thenable,
     promisify as free_promisify,
-    promise_for_dict as free_promise_for_dict,
-)
+    promise_for_dict as free_promise_for_dict, )
 from concurrent.futures import Future
 from threading import Thread
 
@@ -46,6 +45,7 @@ class FakeThenPromise():
     def then(self, s=None, f=None):
         if self.raises:
             raise Exception("FakeThenPromise raises in 'then'")
+
 
 class FakeDonePromise():
     def __init__(self, raises=True):
@@ -349,7 +349,10 @@ def test_done_all():
     p.done_all([
         (inc, dec),
         (inc, dec),
-        {'success': inc, 'failure': dec},
+        {
+            'success': inc,
+            'failure': dec
+        },
     ])
     p.fulfill(4)
 
@@ -361,7 +364,10 @@ def test_done_all():
     p.done_all([(inc, dec)])
     p.done_all([
         (inc, dec),
-        {'success': inc, 'failure': dec},
+        {
+            'success': inc,
+            'failure': dec
+        },
     ])
     p.reject(Exception())
 
@@ -373,10 +379,14 @@ def test_then_all():
 
     handlers = [
         ((lambda x: x * x), (lambda r: 1)),
-        {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
+        {
+            'success': (lambda x: x + x),
+            'failure': (lambda r: 2)
+        },
     ]
 
-    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
+    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all(
+        [(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.fulfill(4)
 
@@ -386,10 +396,14 @@ def test_then_all():
 
     handlers = [
         ((lambda x: x * x), (lambda r: 1)),
-        {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
+        {
+            'success': (lambda x: x + x),
+            'failure': (lambda r: 2)
+        },
     ]
 
-    results = p.then_all() + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
+    results = p.then_all() + p.then_all(
+        [(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.reject(Exception())
 
@@ -405,6 +419,7 @@ def test_do_resolve():
 def test_do_resolve_fail_on_call():
     def raises(resolve, reject):
         raise Exception('Fails')
+
     p1 = Promise(raises)
     assert not p1.is_fulfilled
     assert str(p1.reason) == 'Fails'

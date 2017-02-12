@@ -1,6 +1,7 @@
 try:
     from asyncio import Future, iscoroutine, ensure_future  # type: ignore
 except ImportError:
+
     class Future:  # type: ignore
         def __init__(self):
             raise Exception("You need asyncio for using Futures")
@@ -17,8 +18,11 @@ except ImportError:
     def iscoroutine(obj):  # type: ignore
         return False
 
+
 try:
     from .iterate_promise import iterate_promise
 except (SyntaxError, ImportError):
+
     def iterate_promise(promise):
-        raise Exception('You need "yield from" syntax for iterate in a Promise.')
+        raise Exception(
+            'You need "yield from" syntax for iterate in a Promise.')

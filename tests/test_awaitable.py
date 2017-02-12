@@ -16,5 +16,6 @@ def test_await_time():
     def resolve_or_reject(resolve, reject):
         sleep(.1)
         resolve(True)
+
     p = Promise(resolve_or_reject)
     assert p.get() is True
