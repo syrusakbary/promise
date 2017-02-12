@@ -525,5 +525,32 @@ def test_promisify_promise_subclass():
     p = Promise()
     p.fulfill(10)
     m_p = MyPromise.promisify(p)
+
     assert isinstance(m_p, MyPromise)
     assert m_p.get() == p.get()
+
+
+def test_promise_repr_pending():
+    promise = Promise()
+    assert repr(promise) == "<Promise at {} pending>".format(hex(id(promise)))
+
+
+def test_promise_repr_pending():
+    val = {1:2}
+    promise = Promise.fulfilled(val)
+    promise.wait()
+    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(hex(id(promise)), repr(val))
+
+
+def test_promise_repr_fulfilled():
+    val = {1:2}
+    promise = Promise.fulfilled(val)
+    promise.wait()
+    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(hex(id(promise)), repr(val))
+
+
+def test_promise_repr_rejected():
+    err = Exception("Error!")
+    promise = Promise.rejected(err)
+    promise.wait()
+    assert repr(promise) == "<Promise at {} rejected with {}>".format(hex(id(promise)), repr(err))

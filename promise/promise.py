@@ -65,6 +65,21 @@ class Promise(object):
 
     __await__ = __iter__
 
+    def __repr__(self):
+        hex_id = hex(id(self))
+        if self._state == States.PENDING:
+            return "<Promise at {} pending>".format(hex_id)
+        elif self._state == States.FULFILLED:
+            return "<Promise at {} fulfilled with {}>".format(
+                hex_id,
+                repr(self._value)
+            )
+        elif self._state == States.REJECTED:
+            return "<Promise at {} rejected with {}>".format(
+                hex_id,
+                repr(self.reason)
+            )
+
     @property
     def future(self):
         # type: (Promise) -> Future
