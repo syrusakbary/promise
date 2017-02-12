@@ -1,4 +1,3 @@
-from enum import Enum
 from functools import partial
 from threading import Event, RLock
 from sys import version_info
@@ -7,7 +6,7 @@ from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type:
 from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
 
 
-class States(Enum):
+class States(object):
     # These are the potential states of a promise
     PENDING = -1
     REJECTED = 0
