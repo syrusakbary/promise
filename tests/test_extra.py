@@ -7,8 +7,7 @@ from promise import (
     Promise,
     is_thenable,
     promisify as free_promisify,
-    promise_for_dict as free_promise_for_dict,
-)
+    promise_for_dict as free_promise_for_dict, )
 from concurrent.futures import Future
 from threading import Thread
 
@@ -46,6 +45,7 @@ class FakeThenPromise():
     def then(self, s=None, f=None):
         if self.raises:
             raise Exception("FakeThenPromise raises in 'then'")
+
 
 class FakeDonePromise():
     def __init__(self, raises=True):
@@ -189,10 +189,10 @@ def test_promise_all_when():
     assert p1.is_fulfilled
     assert p2.is_fulfilled
     assert pl.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pl.value[0]
-    assert 10 == pl.value[1]
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pl.get()[0]
+    assert 10 == pl.get()[1]
 
 
 def test_promise_all_when_mixed_promises():
@@ -210,15 +210,15 @@ def test_promise_all_when_mixed_promises():
     assert p1.is_fulfilled
     assert p2.is_fulfilled
     assert pl.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert pl.value == [5, 32, 10, False, True]
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert pl.get() == [5, 32, 10, False, True]
 
 
 def test_promise_all_when_if_no_promises():
     pl = Promise.all([10, 32, False, True])
     assert pl.is_fulfilled
-    assert pl.value == [10, 32, False, True]
+    assert pl.get() == [10, 32, False, True]
 
 
 def test_promise_all_if():
@@ -242,12 +242,12 @@ def test_promise_all_if():
     assert p2.is_fulfilled
     assert pd1.is_fulfilled
     assert pd2.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pd1.value[0]
-    assert 5 == pd2.value[0]
-    assert 10 == pd1.value[1]
-    assert [] == pd3.value
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pd1.get()[0]
+    assert 5 == pd2.get()[0]
+    assert 10 == pd1.get()[1]
+    assert [] == pd3.get()
 
 
 # promise_for_dict
@@ -281,12 +281,12 @@ def test_dict_promise_when(promise_for_dict):
     assert p2.is_fulfilled
     assert pd1.is_fulfilled
     assert pd2.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pd1.value["a"]
-    assert 5 == pd2.value["a"]
-    assert 10 == pd1.value["b"]
-    assert {} == pd3.value
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pd1.get()["a"]
+    assert 5 == pd2.get()["a"]
+    assert 10 == pd1.get()["b"]
+    assert {} == pd3.get()
 
 
 def test_dict_promise_if(promise_for_dict):
@@ -305,10 +305,10 @@ def test_dict_promise_if(promise_for_dict):
     assert p1.is_fulfilled
     assert p2.is_fulfilled
     assert pd.is_fulfilled
-    assert 5 == p1.value
-    assert 10 == p2.value
-    assert 5 == pd.value["a"]
-    assert 10 == pd.value["b"]
+    assert 5 == p1.get()
+    assert 10 == p2.get()
+    assert 5 == pd.get()["a"]
+    assert 10 == pd.get()["b"]
 
 
 def test_done():
@@ -349,7 +349,10 @@ def test_done_all():
     p.done_all([
         (inc, dec),
         (inc, dec),
-        {'success': inc, 'failure': dec},
+        {
+            'success': inc,
+            'failure': dec
+        },
     ])
     p.fulfill(4)
 
@@ -361,7 +364,10 @@ def test_done_all():
     p.done_all([(inc, dec)])
     p.done_all([
         (inc, dec),
-        {'success': inc, 'failure': dec},
+        {
+            'success': inc,
+            'failure': dec
+        },
     ])
     p.reject(Exception())
 
@@ -373,27 +379,35 @@ def test_then_all():
 
     handlers = [
         ((lambda x: x * x), (lambda r: 1)),
-        {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
+        {
+            'success': (lambda x: x + x),
+            'failure': (lambda r: 2)
+        },
     ]
 
-    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
+    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all(
+        [(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.fulfill(4)
 
-    assert [r.value for r in results] == [4, 16, 16, 8]
+    assert [r.get() for r in results] == [4, 16, 16, 8]
 
     p = Promise()
 
     handlers = [
         ((lambda x: x * x), (lambda r: 1)),
-        {'success': (lambda x: x + x), 'failure': (lambda r: 2)},
+        {
+            'success': (lambda x: x + x),
+            'failure': (lambda r: 2)
+        },
     ]
 
-    results = p.then_all() + p.then_all([(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
+    results = p.then_all() + p.then_all(
+        [(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
 
     p.reject(Exception())
 
-    assert [r.value for r in results] == [1, 1, 2]
+    assert [r.get() for r in results] == [1, 1, 2]
 
 
 def test_do_resolve():
@@ -405,6 +419,7 @@ def test_do_resolve():
 def test_do_resolve_fail_on_call():
     def raises(resolve, reject):
         raise Exception('Fails')
+
     p1 = Promise(raises)
     assert not p1.is_fulfilled
     assert str(p1.reason) == 'Fails'
@@ -510,5 +525,32 @@ def test_promisify_promise_subclass():
     p = Promise()
     p.fulfill(10)
     m_p = MyPromise.promisify(p)
+
     assert isinstance(m_p, MyPromise)
     assert m_p.get() == p.get()
+
+
+def test_promise_repr_pending():
+    promise = Promise()
+    assert repr(promise) == "<Promise at {} pending>".format(hex(id(promise)))
+
+
+def test_promise_repr_pending():
+    val = {1:2}
+    promise = Promise.fulfilled(val)
+    promise.wait()
+    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(hex(id(promise)), repr(val))
+
+
+def test_promise_repr_fulfilled():
+    val = {1:2}
+    promise = Promise.fulfilled(val)
+    promise.wait()
+    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(hex(id(promise)), repr(val))
+
+
+def test_promise_repr_rejected():
+    err = Exception("Error!")
+    promise = Promise.rejected(err)
+    promise.wait()
+    assert repr(promise) == "<Promise at {} rejected with {}>".format(hex(id(promise)), repr(err))

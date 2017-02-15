@@ -1,5 +1,5 @@
 from functools import partial
-from threading import Thread, Event, RLock
+from threading import Event, RLock
 from sys import version_info
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
 from .async import Async
@@ -7,6 +7,13 @@ from .async import Async
 async = Async()
 
 from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
+
+
+class States(object):
+    # These are the potential states of a promise
+    PENDING = -1
+    REJECTED = 0
+    FULFILLED = 1
 
 
 class CountdownLatch(object):
@@ -36,26 +43,22 @@ class Promise(object):
     http://promises-aplus.github.io/promises-spec/
     """
 
-    __slots__ = ('state', 'value', 'reason', '_cb_lock', '_callbacks', '_errbacks', '_event', '_future')
-
-    # These are the potential states of a promise
-    PENDING = -1
-    REJECTED = 0
-    FULFILLED = 1
+    __slots__ = ('_state', '_value', 'reason', '_cb_lock', '_callbacks',
+                 '_errbacks', '_event', '_future')
 
     def __init__(self, fn=None):
         # type: (Promise, Callable) -> None
         """
         Initialize the Promise into a pending state.
         """
-        self.state = self.PENDING  # type: int
-        self.value = None  # type: Any
+        self._state = States.PENDING  # type: int
+        self._value = None  # type: Any
         self.reason = None  # type: Optional[Exception]
         self._cb_lock = RLock()
         self._callbacks = []  # type: List[Callable]
         self._errbacks = []  # type: List[Callable]
         self._event = Event()
-        self._future = None   # type: Optional[Future]
+        self._future = None  # type: Optional[Future]
         if fn:
             self.do_resolve(fn)
 
@@ -64,6 +67,21 @@ class Promise(object):
         return iterate_promise(self)
 
     __await__ = __iter__
+
+    def __repr__(self):
+        hex_id = hex(id(self))
+        if self._state == States.PENDING:
+            return "<Promise at {} pending>".format(hex_id)
+        elif self._state == States.FULFILLED:
+            return "<Promise at {} fulfilled with {}>".format(
+                hex_id,
+                repr(self._value)
+            )
+        elif self._state == States.REJECTED:
+            return "<Promise at {} rejected with {}>".format(
+                hex_id,
+                repr(self.reason)
+            )
 
     @property
     def future(self):
@@ -94,11 +112,11 @@ class Promise(object):
             return self.rejected(error)
 
         with self._cb_lock:
-            if self.state != self.PENDING:
+            if self._state != States.PENDING:
                 return
 
-            self.value = value
-            self.state = self.FULFILLED
+            self._value = value
+            self._state = States.FULFILLED
 
             callbacks = self._callbacks
             # We will never call these callbacks again, so allow
@@ -126,15 +144,16 @@ class Promise(object):
         """
         Reject this promise for a given reason.
         """
-        assert isinstance(reason, Exception), ("The reject function needs to be called with an Exception. "
-                                               "Got {}".format(reason))
+        assert isinstance(reason, Exception), (
+            "The reject function needs to be called with an Exception. "
+            "Got {}".format(reason))
 
         with self._cb_lock:
-            if self.state != self.PENDING:
+            if self._state != States.PENDING:
                 return
 
             self.reason = reason
-            self.state = self.REJECTED
+            self._state = States.REJECTED
 
             errbacks = self._errbacks
             # We will never call these errbacks again, so allow
@@ -160,19 +179,19 @@ class Promise(object):
     def is_pending(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise is still pending. Could be wrong the moment the function returns."""
-        return self.state == self.PENDING
+        return self._state == States.PENDING
 
     @property
     def is_fulfilled(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been fulfilled. Could be wrong the moment the function returns."""
-        return self.state == self.FULFILLED
+        return self._state == States.FULFILLED
 
     @property
     def is_rejected(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
-        return self.state == self.REJECTED
+        return self._state == States.REJECTED
 
     def get(self, timeout=None):
         # type: (Promise, float) -> Any
@@ -182,10 +201,10 @@ class Promise(object):
         else:
             self.wait(timeout)
 
-        if self.state == self.PENDING:
+        if self._state == States.PENDING:
             raise ValueError("Value not available, promise is still pending")
-        elif self.state == self.FULFILLED:
-            return self.value
+        elif self._state == States.FULFILLED:
+            return self._value
         raise self.reason
 
     def wait(self, timeout=None):
@@ -204,18 +223,20 @@ class Promise(object):
         if you intend to use the value of the promise somehow in
         the callback, it is more convenient to use the 'then' method.
         """
-        assert callable(f), "A function needs to be passed into add_callback. Got: {}".format(f)
+        assert callable(
+            f
+        ), "A function needs to be passed into add_callback. Got: {}".format(f)
 
         with self._cb_lock:
-            if self.state == self.PENDING:
+            if self._state == States.PENDING:
                 self._callbacks.append(f)
                 return
 
         # This is a correct performance optimization in case of concurrency.
         # State can never change once it is not PENDING anymore and is thus safe to read
         # without acquiring the lock.
-        if self.state == self.FULFILLED:
-            f(self.value)
+        if self._state == States.FULFILLED:
+            f(self._value)
 
     def add_errback(self, f):
         # type: (Promise, Callable) -> None
@@ -225,17 +246,19 @@ class Promise(object):
         somehow in the callback, it is more convenient to use
         the 'then' method.
         """
-        assert callable(f), "A function needs to be passed into add_errback. Got: {}".format(f)
+        assert callable(
+            f
+        ), "A function needs to be passed into add_errback. Got: {}".format(f)
 
         with self._cb_lock:
-            if self.state == self.PENDING:
+            if self._state == States.PENDING:
                 self._errbacks.append(f)
                 return
 
         # This is a correct performance optimization in case of concurrency.
         # State can never change once it is not PENDING anymore and is thus safe to read
         # without acquiring the lock.
-        if self.state == self.REJECTED:
+        if self._state == States.REJECTED:
             f(self.reason)
 
     def catch(self, on_rejection):
@@ -357,7 +380,7 @@ class Promise(object):
         if not handlers:
             return []
 
-        promises = [] # type: List[Promise]
+        promises = []  # type: List[Promise]
 
         for handler in handlers:
             if isinstance(handler, tuple):
@@ -387,21 +410,26 @@ class Promise(object):
         if _len == 0:
             return cls.fulfilled(values_or_promises)
 
-        promises = (cls.promisify(v_or_p) if is_thenable(v_or_p) else cls.resolve(v_or_p) for
-                    v_or_p in values_or_promises)  # type: Iterator[Promise]
+        promises = (
+            cls.promisify(v_or_p)
+            if is_thenable(v_or_p) else cls.resolve(v_or_p)
+            for v_or_p in values_or_promises)  # type: Iterator[Promise]
 
         all_promise = cls()  # type: Promise
         counter = CountdownLatch(_len)
         values = [None] * _len  # type: List[Any]
 
-        def handle_success(original_position, value):
-            # type: (int, Any) -> None
-            values[original_position] = value
-            if counter.dec() == 0:
-                all_promise.fulfill(values)
+        def handle_success(original_position):
+            # type: (int) -> Callable
+            def ret(value):
+                values[original_position] = value
+                if counter.dec() == 0:
+                    all_promise.fulfill(values)
+
+            return ret
 
         for i, p in enumerate(promises):
-            p.done(partial(handle_success, i), all_promise.reject)  # type: ignore
+            p.done(handle_success(i), all_promise.reject)  # type: ignore
 
         return all_promise
 
@@ -499,6 +527,5 @@ def is_thenable(obj):
     """
     return isinstance(obj, Promise) or is_future(obj) or (
         hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
-        hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
-        iscoroutine(obj))
-
+            hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
+                iscoroutine(obj))
