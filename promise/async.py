@@ -5,10 +5,10 @@ from threading import Thread, Timer
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
 class Scheduler(object):
     def call(self, fn):
+        # return fn()
         # thread = Thread(target=fn)
         thread = Timer(0.01, fn)
         thread.start()
-        # return fn()
 
 
 def get_default_scheduler():
@@ -66,7 +66,7 @@ class Async(object):
             self._async_settle_promise(promise)
         else:
             self.schedule.call(
-                promise.settle_promises
+                promise._settle_promises
             )
 
     def drain_queue(self, queue):
@@ -74,7 +74,7 @@ class Async(object):
         while not queue.empty():
             fn = queue.get()
             if (isinstance(fn, Promise)):
-                fn.settle_promises()
+                fn._settle_promises()
                 continue
             fn()
 
