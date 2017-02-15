@@ -537,3 +537,12 @@ def test_3_2_6_5_rejected():
     p2.wait()
     assert p2.is_rejected
     assert_exception(p2.reason, Exception, "Error")
+
+
+def test_chained_promises():
+    """
+    Handles the case where the arguments to then
+    are values, not functions or promises.
+    """
+    p1 = Promise(lambda resolve, reject: resolve(Promise.resolve(True)))
+    assert p1.get() == True

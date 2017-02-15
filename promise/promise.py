@@ -340,26 +340,26 @@ class Promise(object):
             A callback to be invoked if the "self promise"
             is fulfilled.
             """
-            try:
-                if callable(success):
+            if callable(success):
+                try:
                     ret.fulfill(success(v))
-                else:
-                    ret.fulfill(v)
-            except Exception as e:
-                ret.reject(e)
+                except Exception as e:
+                    ret.reject(e)
+            else:
+                ret.fulfill(v)
 
         def call_and_reject(r):
             """
             A callback to be invoked if the "self promise"
             is rejected.
             """
-            try:
-                if callable(failure):
+            if callable(failure):
+                try:
                     ret.fulfill(failure(r))
-                else:
-                    ret.reject(r)
-            except Exception as e:
-                ret.reject(e)
+                except Exception as e:
+                    ret.reject(e)
+            else:
+                ret.reject(r)
 
         # self.done(call_and_fulfill, call_and_reject)
         done = partial(self.done, call_and_fulfill, call_and_reject)
