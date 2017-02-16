@@ -10,7 +10,10 @@ def promise_factorial(n):
         return 1
     sleep(.02)
     a = executor.submit(promise_factorial, n - 1)
-    return Promise.promisify(a).then(lambda r: mul(r, n))
+    def promise_then(r):
+        return mul(r, n)
+
+    return Promise.promisify(a).then(promise_then)
 
 
 def test_factorial():

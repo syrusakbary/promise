@@ -561,8 +561,7 @@ class Promise(object):
     def cast(cls, obj):
         # type: (Any) -> Promise
         ret = cls._try_convert_to_promise(obj)
-
-        if not isinstance(obj, cls):
+        if not isinstance(ret, cls):
             ret = cls(internal_executor)
             # ret._capture_stacktrace()
             ret._state = States.FULFILLED
@@ -638,10 +637,9 @@ def _process_future_result(promise):
     def handle_future_result(future):
         exception = future.exception()
         if exception:
-            promise.reject(exception)
+            promise.do_reject(exception)
         else:
-            promise.fulfill(future.result())
-
+            promise.do_resolve(future.result())
     return handle_future_result
 
 

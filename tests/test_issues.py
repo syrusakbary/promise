@@ -22,11 +22,13 @@ def test_issue_11():
     assert promise_rejected.get() == "-42"
 
 
-# def identity(x):
-#     return x
+def identity(x):
+    return x
 
-# def promise_something(x):
-#     return Promise.promisify(executor.submit(identity, x));
+def promise_something(x):
+    import time
+    time.sleep(.1)
+    return Promise.promisify(executor.submit(identity, x))
 
-# def test_issue_9():
-#     assert Promise.all([promise_something(x).then(lambda y: x*y) for x in (0,1,2,3)]).get() == [0, 1, 4, 9]
+def test_issue_9():
+    assert Promise.all([promise_something(x).then(lambda y: x*y) for x in (0,1,2,3)]).get() == [0, 1, 4, 9]
