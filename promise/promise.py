@@ -52,6 +52,26 @@ def try_catch(handler, *args, **kwargs):
         return _error_obj
 
 
+class CountdownLatch(object):
+    __slots__ = ('_lock', 'count')
+
+    def __init__(self, count):
+        # type: (CountdownLatch, int) -> None
+        assert count >= 0, "count needs to be greater or equals to 0. Got: %s" % count
+        self._lock = RLock()
+        self.count = count
+
+    def dec(self):
+        # type: (CountdownLatch) -> int
+        with self._lock:
+            assert self.count > 0, "count needs to be greater or equals to 0. Got: %s" % self.count
+            self.count -= 1
+            # Return inside lock to return the correct value,
+            # otherwise an other thread could already have
+            # decremented again.
+            return self.count
+
+
 class Promise(object):
     """
     This is the Promise class that complies
@@ -532,6 +552,43 @@ class Promise(object):
     promisify = cast
     resolve = cast
     fulfilled = cast
+
+
+    @classmethod
+    def all(cls, values_or_promises):
+        # Type: (Iterable[Promise, Any]) -> Promise
+        """
+        A special function that takes a bunch of promises
+        and turns them into a promise for a vector of values.
+        In other words, this turns an list of promises for values
+        into a promise for a list of values.
+        """
+        _len = len(values_or_promises)
+        if _len == 0:
+            return cls.fulfilled(values_or_promises)
+
+        promises = (
+            cls.promisify(v_or_p)
+            if is_thenable(v_or_p) else cls.resolve(v_or_p)
+            for v_or_p in values_or_promises)  # type: Iterator[Promise]
+
+        all_promise = cls()  # type: Promise
+        counter = CountdownLatch(_len)
+        values = [None] * _len  # type: List[Any]
+
+        def handle_success(original_position):
+            # type: (int) -> Callable
+            def ret(value):
+                values[original_position] = value
+                if counter.dec() == 0:
+                    all_promise.fulfill(values)
+
+            return ret
+
+        for i, p in enumerate(promises):
+            p.done(handle_success(i), all_promise.reject)  # type: ignore
+
+        return all_promise
 
 
 promisify = Promise.promisify

@@ -7,7 +7,7 @@ class Scheduler(object):
     def call(self, fn):
         # return fn()
         # thread = Thread(target=fn)
-        thread = Timer(0.001, fn)
+        thread = Timer(0.0001, fn)
         thread.start()
 
 

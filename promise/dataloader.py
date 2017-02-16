@@ -1,7 +1,7 @@
 from functools import partial
 from collections import namedtuple, Iterable
 
-from promise import Promise
+from promise import Promise, async
 
 def identity(x):
     return x
@@ -170,17 +170,15 @@ class DataLoader(object):
 resolved_promise = None
 
 def enqueue_post_promise_job(fn):
-    # from threading import Thread
-    # t = Thread(target=fn)
     # t.run()
-    from threading import Timer
-    t = Timer(0.10, fn)
-    t.run()
+    # from threading import Timer
+    # t = Timer(0.10, fn)
+    # t.run()
     # return fn()
-    # global resolved_promise
-    # if not resolved_promise:
-    #     resolved_promise = Promise.resolve(None)
-    # resolved_promise.then(lambda: t.run()) # TODO: Change to async
+    global resolved_promise
+    if not resolved_promise:
+        resolved_promise = Promise.resolve(None)
+    resolved_promise.then(lambda v: async.invoke(fn)) # TODO: Change to async
 
 
 def dispatch_queue(loader):
