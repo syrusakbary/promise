@@ -37,9 +37,6 @@ class Async(object):
         return self.is_tick_used or self.have_drained_queues
 
     def _async_invoke_later(self, fn):
-        # self.late_queue.put(fn)
-        # self.late_queue.put(receiver)
-        # self.late_queue.put(arg)
         self.late_queue.put(fn)
         self.queue_tick()
 

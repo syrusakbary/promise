@@ -48,7 +48,7 @@ def try_catch(handler, *args, **kwargs):
         return handler(*args, **kwargs)
     except Exception as e:
         _error_obj['e'] = e
-        print traceback.format_exc()
+        # print traceback.format_exc()
         return _error_obj
 
 
@@ -79,8 +79,10 @@ class Promise(object):
     http://promises-aplus.github.io/promises-spec/
     """
 
-    # __slots__ = ('_state', '_value', 'reason', '_callbacks',
-    #              '_errbacks', '_event', '_future')
+    __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
+        '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
+        '_is_waiting'
+    )
 
     def __init__(self, executor=None):
         # type: (Promise, Callable) -> None
@@ -93,10 +95,7 @@ class Promise(object):
         self._is_following = False
         self._is_async_guaranteed = False
         self._length = 0
-        self._callbacks = []  # type: List[Callable]
-        self._errbacks = []  # type: List[Callable]
         self._handlers = {}
-        self._event = Event()
         self._fulfillment_handler0 = None
         self._rejection_handler0 = None
         self._promise0 = None
@@ -106,8 +105,8 @@ class Promise(object):
             self._resolve_from_executor(executor)
 
         # For compatibility reasons
-        self.reject = self._deprecated_reject
-        self.resolve = self._deprecated_resolve
+        # self.reject = self._deprecated_reject
+        # self.resolve = self._deprecated_resolve
 
     @deprecated(
         "Rejecting directly in a Promise instance is deprecated, as Promise.reject() is now a class method. "
@@ -363,7 +362,7 @@ class Promise(object):
             executor(resolve, reject)
         except Exception as e:
             error = e
-            print traceback.format_exc()
+            # print traceback.format_exc()
 
         synchronous = False
         # self._pop_context()
@@ -372,14 +371,35 @@ class Promise(object):
             self._reject_callback(error, True)
 
     def _wait(self):
+        target = self._target()
+
         if self._state == States.PENDING and not self._is_waiting:
-            self._add_callbacks(
-                lambda result: self._event.set(),
-                lambda error: self._event.set(),
-                None,
+            event = Event()
+
+            # Simpler way of doing it, not working with following promises
+
+            # self._add_callbacks(
+            #     lambda result: event.set(),
+            #     lambda error: event.set(),
+            #     None,
+            # )
+
+            self._is_following = False
+
+            def on_result(result):
+                event.set()
+                self._resolve_callback(result)
+
+            def on_error(error):
+                event.set()
+                self._reject_callback(error)
+
+            target._then(
+                on_result,
+                on_error,
             )
             self._is_waiting = True
-            self._event.wait()
+            event.wait()
 
     def get(self, wait=True):
         if wait:
