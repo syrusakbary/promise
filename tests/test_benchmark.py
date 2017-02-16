@@ -14,7 +14,7 @@ def test_benchmark_promise_creation_with_resolve(benchmark):
 
     def create_promise():  # unnecessary function call
         p = Promise(do_resolve)
-        p.wait()
+        # p._wait()
         return p
 
     result = benchmark(create_promise).get()
@@ -26,7 +26,7 @@ def test_benchmark_promise_creation_with_reject(benchmark):
 
     def create_promise():  # unnecessary function call
         p = Promise(do_resolve)
-        p.wait()
+        # p._wait()
         return p
 
     with raises(Exception) as exc_info:
