@@ -585,7 +585,7 @@ class Promise(object):
         """
         _len = len(values_or_promises)
         if _len == 0:
-            return cls.fulfilled(values_or_promises)
+            return cls.resolve(values_or_promises)
 
         promises = (
             cls.promisify(v_or_p)
@@ -610,10 +610,28 @@ class Promise(object):
 
         return all_promise
 
+    @classmethod
+    def for_dict(cls, m):
+        # type: (Dict[Any, Promise]) -> Promise
+        """
+        A special function that takes a dictionary of promises
+        and turns them into a promise for a dictionary of values.
+        In other words, this turns an dictionary of promises for values
+        into a promise for a dictionary of values.
+        """
+        dict_type = type(m)
+
+        if not m:
+            return cls.resolve(dict_type())
+
+        def handle_success(resolved_values):
+            return dict_type(zip(m.keys(), resolved_values))
+
+        return cls.all(m.values()).then(handle_success)
+
 
 promisify = Promise.promisify
-# promise_for_dict = Promise.for_dict
-promise_for_dict = None
+promise_for_dict = Promise.for_dict
 
 def _process_future_result(promise):
     def handle_future_result(future):

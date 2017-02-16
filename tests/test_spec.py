@@ -343,7 +343,7 @@ def test_3_2_6_3_when_fulfilled():
 
     assert pending.is_pending
     assert pf.is_pending
-    p1.resolve(10)
+    p1.do_resolve(10)
     pending.do_resolve(5)
     pending._wait()
     assert pending.is_fulfilled
@@ -418,8 +418,6 @@ def test_3_2_6_3_when_rejected():
     pending._wait()
     assert pending.is_fulfilled
     assert 10 == pending.get()
-    pr._wait()
-    assert pr.is_fulfilled
     assert 10 == pr.get()
 
     p2 = Promise()
