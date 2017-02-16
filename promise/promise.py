@@ -303,11 +303,12 @@ class Promise(object):
                 self._rejection_handler0 = reject
 
         else:
-            assert not (base + CALLBACK_PROMISE_OFFSET) not in self._handlers
-            assert not (base + CALLBACK_FULFILL_OFFSET) not in self._handlers
-            assert not (base + CALLBACK_REJECT_OFFSET) not in self._handlers
-
             base = index * CALLBACK_SIZE - CALLBACK_SIZE
+
+            assert (base + CALLBACK_PROMISE_OFFSET) not in self._handlers
+            assert (base + CALLBACK_FULFILL_OFFSET) not in self._handlers
+            assert (base + CALLBACK_REJECT_OFFSET) not in self._handlers
+
             self._handlers[base + CALLBACK_PROMISE_OFFSET] = promise
             if callable(fulfill):
                 self._handlers[base + CALLBACK_FULFILL_OFFSET] = fulfill
