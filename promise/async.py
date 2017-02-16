@@ -7,7 +7,7 @@ class Scheduler(object):
     def call(self, fn):
         # return fn()
         # thread = Thread(target=fn)
-        thread = Timer(0.01, fn)
+        thread = Timer(0.001, fn)
         thread.start()
 
 
@@ -30,6 +30,9 @@ class Async(object):
     def enable_trampoline(self):
         self.trampoline_enabled = True
 
+    def disable_trampoline(self):
+        self.trampoline_enabled = False
+
     def have_items_queued(self):
         return self.is_tick_used or self.have_drained_queues
 
@@ -46,6 +49,7 @@ class Async(object):
 
     def _async_settle_promise(self, promise):
         self.normal_queue.put(promise)
+        self.queue_tick()
 
     def invoke_later(self, fn):
         if self.trampoline_enabled:
