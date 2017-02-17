@@ -7,9 +7,8 @@ class Scheduler(object):
     def call(self, fn):
         # return fn()
         # thread = Thread(target=fn)
-        thread = Timer(0.0001, fn)
+        thread = Timer(0.001, fn)
         thread.start()
-
 
 def get_default_scheduler():
     return Scheduler()
@@ -69,6 +68,15 @@ class Async(object):
             self.schedule.call(
                 promise._settle_promises
             )
+
+
+    def throw_later(self, reason):
+        def fn():
+            raise reason
+
+        self.schedule.call(fn)
+
+    fatal_error = throw_later
 
     def drain_queue(self, queue):
         from promise import Promise

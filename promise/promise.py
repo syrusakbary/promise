@@ -10,6 +10,7 @@ async = Async()
 
 from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
 
+IS_PYTHON2 = version_info[0] == 2
 
 Context = namedtuple('Context', 'handler,promise,value')
 MAX_LENGTH = 0xFFFF|0
@@ -208,6 +209,14 @@ class Promise(object):
         # self._attach_extratrace(trace, synchronous and has_stack)
         self._reject(reason)
 
+    def _clear_callback_data_index_at(self, index):
+        assert not self._is_following
+        assert index > 0
+        base = index * CALLBACK_SIZE - CALLBACK_SIZE
+        self._handlers[base + CALLBACK_PROMISE_OFFSET] = None
+        self._handlers[base + CALLBACK_FULFILL_OFFSET] = None
+        self._handlers[base + CALLBACK_REJECT_OFFSET] = None
+
     def _fulfill_promises(self, length, value):
         for i in range(1, length):
             handler = self._fulfillment_handler_at(i)
@@ -371,7 +380,7 @@ class Promise(object):
         if error != None:
             self._reject_callback(error, True)
 
-    def _wait(self):
+    def _wait(self, timeout=None):
         target = self._target()
 
         if self._state == States.PENDING and not self._is_waiting:
@@ -400,11 +409,17 @@ class Promise(object):
                 on_error,
             )
             self._is_waiting = True
-            event.wait()
 
-    def get(self, wait=True):
-        if wait:
-            self._wait()
+            if timeout is None and IS_PYTHON2:
+                timout = float("Inf")
+
+            waited = event.wait(timeout)
+            if not waited:
+                self._is_waiting = False
+
+    def get(self, wait=True, timeout=None):
+        if wait or timeout:
+            self._wait(timeout)
         
         return self._settled_value(_raise=True)
 
@@ -515,9 +530,60 @@ class Promise(object):
         """
         return self._then(did_fulfill, did_reject)
 
-    def done(self, did_fulfill, did_reject):
+    def done(self, did_fulfill=None, did_reject=None):
         promise = self._then(did_fulfill, did_reject)
         promise._is_final = True
+
+    def done_all(self, handlers=None):
+        # type: (Promise, List[Callable]) -> List[Promise]
+        """
+        :type handlers: list[(Any) -> object] | list[((Any) -> object, (Any) -> object)]
+        """
+        if not handlers:
+            return []
+
+        for handler in handlers:
+            if isinstance(handler, tuple):
+                s, f = handler
+
+                self.done(s, f)
+            elif isinstance(handler, dict):
+                s = handler.get('success')
+                f = handler.get('failure')
+
+                self.done(s, f)
+            else:
+                self.done(handler)
+
+    def then_all(self, handlers=None):
+        # type: (Promise, List[Callable]) -> List[Promise]
+        """
+        Utility function which calls 'then' for each handler provided. Handler can either
+        be a function in which case it is used as success handler, or a tuple containing
+        the success and the failure handler, where each of them could be None.
+        :type handlers: list[(Any) -> object] | list[((Any) -> object, (Any) -> object)]
+        :param handlers
+        :rtype : list[Promise]
+        """
+        if not handlers:
+            return []
+
+        promises = []  # type: List[Promise]
+
+        for handler in handlers:
+            if isinstance(handler, tuple):
+                s, f = handler
+
+                promises.append(self.then(s, f))
+            elif isinstance(handler, dict):
+                s = handler.get('success')
+                f = handler.get('failure')
+
+                promises.append(self.then(s, f))
+            else:
+                promises.append(self.then(handler))
+
+        return promises
 
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
@@ -532,15 +598,15 @@ class Promise(object):
 
         done = getattr(obj, "done", None)  # type: Optional[Callable]
         if callable(done):
-            p = cls()
-            done(p.fulfill, p.reject)
-            return p
+            def executor(resolve, reject):
+                done(resolve, reject)
+            return cls(executor)
 
         then = getattr(obj, "then", None)  # type: Optional[Callable]
         if callable(then):
-            p = cls()
-            then(p.fulfill, p.reject)
-            return p
+            def executor(resolve, reject):
+                then(resolve, reject)
+            return cls(executor)
 
         if iscoroutine(obj):
             return cls._try_convert_to_promise(ensure_future(obj))
