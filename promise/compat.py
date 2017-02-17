@@ -18,6 +18,10 @@ except ImportError:
     def iscoroutine(obj):  # type: ignore
         return False
 
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 try:
     from .iterate_promise import iterate_promise

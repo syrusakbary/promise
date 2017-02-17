@@ -1,6 +1,7 @@
 from functools import partial
-from queue import Queue
 from threading import Thread, Timer
+
+from .compat import Queue
 
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
 class Scheduler(object):
