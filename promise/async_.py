@@ -81,7 +81,7 @@ class Async(object):
     fatal_error = throw_later
 
     def drain_queue(self, queue):
-        from promise import Promise
+        from .promise import Promise
         while not queue.empty():
             fn = queue.get()
             if (isinstance(fn, Promise)):
