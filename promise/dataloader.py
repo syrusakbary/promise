@@ -3,7 +3,8 @@ from collections import namedtuple, Iterable
 
 from promise import Promise, async
 
-from typing import Sized
+from typing import Sized  # flake8: noqa
+
 
 def identity(x):
     return x

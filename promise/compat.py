@@ -20,9 +20,9 @@ except ImportError:
         return False
 
 try:
-    from Queue import Queue
+    from Queue import Queue  # flake8: noqa
 except ImportError:
-    from queue import Queue
+    from queue import Queue  # flake8: noqa
 
 try:
     from .iterate_promise import iterate_promise
