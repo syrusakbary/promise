@@ -348,7 +348,6 @@ def test_3_2_6_3_when_fulfilled():
     pending._wait()
     assert pending.is_fulfilled
     assert 5 == pending.get()
-    print p1, pending
     pf._wait()
     assert pf.is_fulfilled
     assert 5 == pf.get()
