@@ -49,7 +49,7 @@ def try_catch(handler, *args, **kwargs):
         return handler(*args, **kwargs)
     except Exception as e:
         _error_obj['e'] = e
-        print(traceback.format_exc())
+        # print traceback.format_exc()
         return _error_obj
 
 
@@ -82,7 +82,7 @@ class Promise(object):
 
     __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
         '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
-        '_is_waiting'
+        '_is_waiting', '_future'
     )
 
     def __init__(self, executor=None):
@@ -100,6 +100,7 @@ class Promise(object):
         self._fulfillment_handler0 = None
         self._rejection_handler0 = None
         self._promise0 = None
+        self._future = None
 
         self._is_waiting = False
         if executor != None and executor != internal_executor:
@@ -108,6 +109,19 @@ class Promise(object):
         # For compatibility reasons
         # self.reject = self._deprecated_reject
         # self.resolve = self._deprecated_resolve
+
+    @property
+    def future(self):
+        # type: (Promise) -> Future
+        if not self._future:
+            self._future = Future()
+            self._then(self._future.set_result, self._future.set_exception)
+        return self._future
+
+    def __iter__(self):
+        return iterate_promise(self)
+
+    __await__ = __iter__
 
     @deprecated(
         "Rejecting directly in a Promise instance is deprecated, as Promise.reject() is now a class method. "
@@ -372,7 +386,7 @@ class Promise(object):
             executor(resolve, reject)
         except Exception as e:
             error = e
-            print(traceback.format_exc())
+            # print traceback.format_exc()
 
         synchronous = False
         # self._pop_context()
@@ -592,8 +606,13 @@ class Promise(object):
 
         add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
         if callable(add_done_callback):
-            promise = cls()
-            add_done_callback(_process_future_result(promise))
+            def executor(resolve, reject):
+                if obj.done():
+                    _process_future_result(resolve, reject)(obj)
+                else:
+                    add_done_callback(_process_future_result(resolve, reject))
+            promise = cls(executor)
+            promise._future = obj
             return promise
 
         done = getattr(obj, "done", None)  # type: Optional[Callable]
@@ -699,13 +718,13 @@ class Promise(object):
 promisify = Promise.promisify
 promise_for_dict = Promise.for_dict
 
-def _process_future_result(promise):
+def _process_future_result(resolve, reject):
     def handle_future_result(future):
         exception = future.exception()
         if exception:
-            promise.do_reject(exception)
+            reject(exception)
         else:
-            promise.do_resolve(future.result())
+            resolve(future.result())
     return handle_future_result
 
 
