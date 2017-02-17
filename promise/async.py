@@ -1,5 +1,5 @@
 from functools import partial
-from Queue import Queue
+from queue import Queue
 from threading import Thread, Timer
 
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
