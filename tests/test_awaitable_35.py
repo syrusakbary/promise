@@ -1,4 +1,4 @@
-from asyncio import sleep, Future
+from asyncio import sleep, Future, wait, FIRST_COMPLETED
 from pytest import mark
 from promise import Promise, promisify, is_thenable
 

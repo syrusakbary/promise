@@ -11,13 +11,14 @@ def identity(x):
 
 def get_chunks(iterable_obj, chunk_size=1):
     chunk_size = max(1, chunk_size)
-    return (iterable_obj[i:i+chunk_size] for i in range(0, len(iterable_obj), chunk_size))
+    return (iterable_obj[i:i + chunk_size] for i in range(0, len(iterable_obj), chunk_size))
 
 
 Loader = namedtuple('Loader', 'key,resolve,reject')
 
 
 class DataLoader(object):
+
     def __init__(self, batch_load_fn, batch=True, max_batch_size=None, cache=True, cache_key_fn=None, cache_map=None):
 
         if not callable(batch_load_fn):
@@ -33,7 +34,7 @@ class DataLoader(object):
         self._cache_key_fn = cache_key_fn or identity
         self._cache_map = cache_map
         self._promise_cache = cache_map or {}
-        self._queue = [] # type: List[Loader]
+        self._queue = []  # type: List[Loader]
 
     def load(self, key=None):
         '''
@@ -41,9 +42,9 @@ class DataLoader(object):
         '''
         if key is None:
             raise TypeError((
-                        'The loader.load() function must be called with a value,' +
-                        'but got: {}.'
-                ).format(key))
+                'The loader.load() function must be called with a value,' +
+                'but got: {}.'
+            ).format(key))
 
         cache_key = self._cache_key_fn(key)
 
@@ -59,7 +60,6 @@ class DataLoader(object):
         # If caching, cache this promise.
         if self._cache:
             self._promise_cache[cache_key] = promise
-
 
         return promise
 
@@ -90,9 +90,9 @@ class DataLoader(object):
         Loads multiple keys, promising an array of values
 
         >>> a, b = await my_loader.load_many([ 'a', 'b' ])
-        
+
         This is equivalent to the more verbose:
-    
+
         >>> a, b = await Promise.all([
         >>>    my_loader.load('a'),
         >>>    my_loader.load('b')
@@ -105,7 +105,6 @@ class DataLoader(object):
             ).format(keys))
 
         return Promise.all([self.load(key) for key in keys])
-
 
     def clear(self, key):
         '''
@@ -171,6 +170,7 @@ class DataLoader(object):
 # Private: cached resolved Promise instance
 resolved_promise = None
 
+
 def enqueue_post_promise_job(fn):
     # t.run()
     # from threading import Timer
@@ -180,7 +180,7 @@ def enqueue_post_promise_job(fn):
     global resolved_promise
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
-    resolved_promise.then(lambda v: async.invoke(fn)) # TODO: Change to async
+    resolved_promise.then(lambda v: async.invoke(fn))  # TODO: Change to async
 
 
 def dispatch_queue(loader):

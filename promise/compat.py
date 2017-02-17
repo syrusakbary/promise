@@ -3,6 +3,7 @@ try:
 except ImportError:
 
     class Future:  # type: ignore
+
         def __init__(self):
             raise Exception("You need asyncio for using Futures")
 

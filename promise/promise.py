@@ -13,13 +13,14 @@ from typing import Union, Callable, Optional, Iterator, Any, Dict  # flake8: noq
 IS_PYTHON2 = version_info[0] == 2
 
 Context = namedtuple('Context', 'handler,promise,value')
-MAX_LENGTH = 0xFFFF|0
+MAX_LENGTH = 0xFFFF | 0
 CALLBACK_SIZE = 3
 
 CALLBACK_FULFILL_OFFSET = 0
 CALLBACK_REJECT_OFFSET = 1
 CALLBACK_PROMISE_OFFSET = 2
 # CALLBACK_RECEIVER_OFFSET = 3;
+
 
 def noop(val):
     pass
@@ -35,22 +36,23 @@ class States(object):
 def internal_executor(resolve, reject):
     pass
 
+
 def make_self_resolution_error():
     return TypeError("Promise is self")
 
-# _error_obj = {
-#     'e': None
-# }
 
-import traceback
+_error_obj = {
+    'e': None
+} # type: Dict[str, Union[None, Exception]]
+
 
 def try_catch(handler, *args, **kwargs):
     try:
         return handler(*args, **kwargs)
     except Exception as e:
-        # _error_obj['e'] = e
+        _error_obj['e'] = e
         # print traceback.format_exc()
-        return e
+        return _error_obj
 
 
 class CountdownLatch(object):
@@ -81,9 +83,9 @@ class Promise(object):
     """
 
     __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
-        '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
-        '_is_waiting', '_future'
-    )
+                 '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
+                 '_is_waiting', '_future'
+                 )
 
     def __init__(self, executor=None):
         # type: (Promise, Union[Callable, partial]) -> None
@@ -96,14 +98,14 @@ class Promise(object):
         self._is_following = False
         self._is_async_guaranteed = False
         self._length = 0
-        self._handlers = {} # type: Dict[int, Union[Callable, None]]
-        self._fulfillment_handler0 = None # type: Union[Callable, partial]
-        self._rejection_handler0 = None # type: Union[Callable, partial]
-        self._promise0 = None # type: Promise
-        self._future = None # type: Future
+        self._handlers = {}  # type: Dict[int, Union[Callable, None]]
+        self._fulfillment_handler0 = None  # type: Union[Callable, partial]
+        self._rejection_handler0 = None  # type: Union[Callable, partial]
+        self._promise0 = None  # type: Promise
+        self._future = None  # type: Future
 
         self._is_waiting = False
-        if executor != None and executor != internal_executor:
+        if executor is not None and executor != internal_executor:
             self._resolve_from_executor(executor)
 
         # For compatibility reasons
@@ -142,7 +144,6 @@ class Promise(object):
     def _resolve_callback(self, value):
         if value is self:
             return self._reject_callback(make_self_resolution_error(), False)
-
 
         maybe_promise = self._try_convert_to_promise(value, self)
         if not isinstance(maybe_promise, Promise):
@@ -219,7 +220,6 @@ class Promise(object):
         assert isinstance(reason, Exception), "A promise was rejected with a non-error: {}".format(reason)
         # trace = ensure_error_object(reason)
         # has_stack = trace is reason
-        has_stack = False
         # self._attach_extratrace(trace, synchronous and has_stack)
         self._reject(reason)
 
@@ -251,7 +251,7 @@ class Promise(object):
         async_guaranteed = self._is_async_guaranteed
         if callable(handler):
             if not is_promise:
-                handler(value) # , promise
+                handler(value)  # , promise
             else:
                 if async_guaranteed:
                     promise._is_async_guaranteed = True
@@ -267,34 +267,34 @@ class Promise(object):
     def _settle_promise0(self, handler, value):
         promise = self._promise0
         self._promise0 = None
-        self._settle_promise(promise, handler,  value)
+        self._settle_promise(promise, handler, value)
 
     def _settle_promise_from_handler(self, handler, value, promise):
         # promise._push_context()
-        x = try_catch(handler, value) # , promise
+        x = try_catch(handler, value)  # , promise
         # promise_created = promise._pop_context()
 
-        # if x == _error_obj:
-        #     promise._reject_callback(x['e'], False)
-        if isinstance(x, Exception):
-            promise._reject_callback(x, False)
+        if x == _error_obj:
+            promise._reject_callback(x['e'], False)
+        # if isinstance(x, PromiseError):
+        #     promise._reject_callback(x.e, False)
         else:
             promise._resolve_callback(x)
 
     def _promise_at(self, index):
         assert index > 0
         assert not self._is_following
-        return self._handlers[index*CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_PROMISE_OFFSET]
+        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_PROMISE_OFFSET]
 
     def _fulfillment_handler_at(self, index):
         assert not self._is_following
         assert index > 0
-        return self._handlers[index*CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_FULFILL_OFFSET]
+        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_FULFILL_OFFSET]
 
     def _rejection_handler_at(self, index):
         assert not self._is_following
         assert index > 0
-        return self._handlers[index*CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_REJECT_OFFSET]
+        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_REJECT_OFFSET]
 
     def _migrate_callback0(self, follower):
         self._add_callbacks(
@@ -378,6 +378,7 @@ class Promise(object):
         # self._capture_stacktrace()
         # self._push_context()
         synchronous = True
+
         def resolve(value):
             self._resolve_callback(value)
 
@@ -394,7 +395,7 @@ class Promise(object):
         synchronous = False
         # self._pop_context()
 
-        if error != None:
+        if error is not None:
             self._reject_callback(error, True)
 
     def _wait(self, timeout=None):
@@ -428,7 +429,7 @@ class Promise(object):
             self._is_waiting = True
 
             if timeout is None and IS_PYTHON2:
-                timout = float("Inf")
+                float("Inf")
 
             waited = event.wait(timeout)
             if not waited:
@@ -437,7 +438,7 @@ class Promise(object):
     def get(self, wait=True, timeout=None):
         if wait or timeout:
             self._wait(timeout)
-        
+
         return self._settled_value(_raise=True)
 
     _value = _reason = _settled_value
@@ -484,16 +485,11 @@ class Promise(object):
         """
         return self.then(None, on_rejection)
 
-    def _settle_promise_ctx(self, ctx):
-        return self._settle_promise(ctx.promise, ctx.handler, ctx.value)
-
     def _then(self, did_fulfill=None, did_reject=None):
         promise = self.__class__(internal_executor)
         target = self._target()
 
         if not target.is_pending:
-            settler = target._settle_promise_ctx
-
             if target.is_fulfilled:
                 value = target._rejection_handler0
                 handler = did_fulfill
@@ -661,7 +657,6 @@ class Promise(object):
     promisify = cast
     fulfilled = cast
 
-
     @classmethod
     def all(cls, values_or_promises):
         # Type: (Iterable[Promise, Any]) -> Promise
@@ -720,6 +715,7 @@ class Promise(object):
 
 promisify = Promise.promisify
 promise_for_dict = Promise.for_dict
+
 
 def _process_future_result(resolve, reject):
     def handle_future_result(future):

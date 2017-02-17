@@ -1,25 +1,30 @@
-from functools import partial
-from threading import Thread, Timer
+from threading import Timer
 
 from .compat import Queue
 
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
+
+
 class Scheduler(object):
+
     def call(self, fn):
         # return fn()
         # thread = Thread(target=fn)
         thread = Timer(0.001, fn)
         thread.start()
 
+
 def get_default_scheduler():
     return Scheduler()
 
 
 # https://docs.python.org/2/library/queue.html#Queue.Queue
-LATE_QUEUE_CAPACITY = 0 # The queue size is infinite
-NORMAL_QUEUE_CAPACITY = 0 # The queue size is infinite
+LATE_QUEUE_CAPACITY = 0  # The queue size is infinite
+NORMAL_QUEUE_CAPACITY = 0  # The queue size is infinite
+
 
 class Async(object):
+
     def __init__(self, schedule=None):
         self.is_tick_used = False
         self.late_queue = Queue(LATE_QUEUE_CAPACITY)
@@ -70,7 +75,6 @@ class Async(object):
             self.schedule.call(
                 promise._settle_promises
             )
-
 
     def throw_later(self, reason):
         def fn():
