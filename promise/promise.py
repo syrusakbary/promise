@@ -8,7 +8,7 @@ from .utils import deprecated
 
 async = Async()
 
-from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
+from typing import Union, Callable, Optional, Iterator, Any, Dict  # flake8: noqa
 
 IS_PYTHON2 = version_info[0] == 2
 
@@ -38,9 +38,9 @@ def internal_executor(resolve, reject):
 def make_self_resolution_error():
     return TypeError("Promise is self")
 
-_error_obj = {
-    'e': None
-}
+# _error_obj = {
+#     'e': None
+# }
 
 import traceback
 
@@ -48,9 +48,9 @@ def try_catch(handler, *args, **kwargs):
     try:
         return handler(*args, **kwargs)
     except Exception as e:
-        _error_obj['e'] = e
+        # _error_obj['e'] = e
         # print traceback.format_exc()
-        return _error_obj
+        return e
 
 
 class CountdownLatch(object):
@@ -86,7 +86,7 @@ class Promise(object):
     )
 
     def __init__(self, executor=None):
-        # type: (Promise, Callable) -> None
+        # type: (Promise, Union[Callable, partial]) -> None
         """
         Initialize the Promise into a pending state.
         """
@@ -96,11 +96,11 @@ class Promise(object):
         self._is_following = False
         self._is_async_guaranteed = False
         self._length = 0
-        self._handlers = {}
-        self._fulfillment_handler0 = None
-        self._rejection_handler0 = None
-        self._promise0 = None
-        self._future = None
+        self._handlers = {} # type: Dict[int, Union[Callable, None]]
+        self._fulfillment_handler0 = None # type: Union[Callable, partial]
+        self._rejection_handler0 = None # type: Union[Callable, partial]
+        self._promise0 = None # type: Promise
+        self._future = None # type: Future
 
         self._is_waiting = False
         if executor != None and executor != internal_executor:
@@ -273,8 +273,11 @@ class Promise(object):
         # promise._push_context()
         x = try_catch(handler, value) # , promise
         # promise_created = promise._pop_context()
-        if x == _error_obj:
-            promise._reject_callback(x['e'], False)
+
+        # if x == _error_obj:
+        #     promise._reject_callback(x['e'], False)
+        if isinstance(x, Exception):
+            promise._reject_callback(x, False)
         else:
             promise._resolve_callback(x)
 
@@ -474,7 +477,7 @@ class Promise(object):
         return self._state == States.REJECTED
 
     def catch(self, on_rejection):
-        # type: (Promise, Callable) -> Promise
+        # type: (Promise, Union[Callable, partial]) -> Promise
         """
         This method returns a Promise and deals with rejected cases only.
         It behaves the same as calling Promise.then(None, on_rejection).
@@ -515,7 +518,7 @@ class Promise(object):
     do_reject = _reject_callback
 
     def then(self, did_fulfill=None, did_reject=None):
-        # type: (Promise, Callable, Callable) -> Promise
+        # type: (Promise, Union[Callable, partial], Union[Callable, partial]) -> Promise
         """
         This method takes two optional arguments.  The first argument
         is used if the "self promise" is fulfilled and the other is
@@ -643,7 +646,7 @@ class Promise(object):
     rejected = reject
 
     @classmethod
-    def cast(cls, obj):
+    def resolve(cls, obj):
         # type: (Any) -> Promise
         ret = cls._try_convert_to_promise(obj)
         if not isinstance(ret, cls):
@@ -654,8 +657,8 @@ class Promise(object):
 
         return ret
 
+    cast = resolve
     promisify = cast
-    resolve = cast
     fulfilled = cast
 
 

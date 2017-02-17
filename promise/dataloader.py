@@ -3,6 +3,8 @@ from collections import namedtuple, Iterable
 
 from promise import Promise, async
 
+from typing import Sized
+
 def identity(x):
     return x
 
@@ -31,7 +33,7 @@ class DataLoader(object):
         self._cache_key_fn = cache_key_fn or identity
         self._cache_map = cache_map
         self._promise_cache = cache_map or {}
-        self._queue = [] # List[Loader]
+        self._queue = [] # type: List[Loader]
 
     def load(self, key=None):
         '''
@@ -225,6 +227,7 @@ def dispatch_queue_batch(loader, queue):
         )
 
     def batch_promise_resolved(values):
+        # type: (Sized) -> None
         # Assert the expected resolution from batchLoadFn.
         if not isinstance(values, Iterable):
             raise TypeError((
@@ -260,5 +263,5 @@ def failed_dispatch(loader, queue, error):
     but still reject each request so they do not hang.
     '''
     for l in queue:
-        loader.clear(key)
+        loader.clear(l.key)
         l.reject(error)
