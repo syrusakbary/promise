@@ -3,7 +3,7 @@ from collections import namedtuple
 from threading import Event, RLock
 from sys import version_info
 from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
-from .async import Async
+from .async_ import Async
 from .utils import deprecated
 
 async = Async()
@@ -49,7 +49,7 @@ def try_catch(handler, *args, **kwargs):
         return handler(*args, **kwargs)
     except Exception as e:
         _error_obj['e'] = e
-        # print traceback.format_exc()
+        print(traceback.format_exc())
         return _error_obj
 
 
@@ -372,7 +372,7 @@ class Promise(object):
             executor(resolve, reject)
         except Exception as e:
             error = e
-            # print traceback.format_exc()
+            print(traceback.format_exc())
 
         synchronous = False
         # self._pop_context()

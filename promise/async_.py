@@ -15,8 +15,9 @@ def get_default_scheduler():
     return Scheduler()
 
 
-LATE_QUEUE_CAPACITY = None
-NORMAL_QUEUE_CAPACITY = None
+# https://docs.python.org/2/library/queue.html#Queue.Queue
+LATE_QUEUE_CAPACITY = 0 # The queue size is infinite
+NORMAL_QUEUE_CAPACITY = 0 # The queue size is infinite
 
 class Async(object):
     def __init__(self, schedule=None):
