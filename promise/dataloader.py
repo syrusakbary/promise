@@ -1,8 +1,7 @@
+from collections import Iterable, namedtuple
 from functools import partial
-from collections import namedtuple, Iterable
 
 from promise import Promise, async
-
 from typing import Sized  # flake8: noqa
 
 

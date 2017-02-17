@@ -1,14 +1,17 @@
-from functools import partial
 from collections import namedtuple
-from threading import Event, RLock
+from functools import partial
 from sys import version_info
-from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
+from threading import Event, RLock
+
+from typing import (Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
+                    Union)
+
 from .async_ import Async
+from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
+                     iterate_promise)
 from .utils import deprecated
 
 async = Async()
-
-from typing import Union, Callable, Optional, Iterator, Any, Dict  # flake8: noqa
 
 IS_PYTHON2 = version_info[0] == 2
 
@@ -19,11 +22,6 @@ CALLBACK_SIZE = 3
 CALLBACK_FULFILL_OFFSET = 0
 CALLBACK_REJECT_OFFSET = 1
 CALLBACK_PROMISE_OFFSET = 2
-# CALLBACK_RECEIVER_OFFSET = 3;
-
-
-def noop(val):
-    pass
 
 
 class States(object):
