@@ -510,7 +510,8 @@ class Promise(object):
                 handler = did_reject
                 # target._rejection_is_unhandled = False
             async.invoke(
-                partial(self._settle_promise, promise, handler, value)
+                partial(self._settle_promise, promise, handler, value),
+                context=target._trace,
                 # target._settle_promise instead?
                 # settler,
                 # target,

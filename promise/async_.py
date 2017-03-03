@@ -1,7 +1,7 @@
 from threading import Timer, Thread
 
 from .compat import Queue
-
+from .context import Context
 
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
 
@@ -9,13 +9,16 @@ from .compat import Queue
 class Scheduler(object):
 
     def call(self, fn):
-        from .context import Context
+        
+        # thread = Thread(target=fn)
+        # thread = Timer(0.001, fn)
+        # fn = thread.start
         try:
-            c = Context.peek_context()
-            if not c:
-                fn()
-            else:
-                c.on_exit(fn)
+            # c = Context.peek_context()
+            # if not c:
+            fn()
+            # else:
+                # c.on_exit(fn)
         except:
             pass
         # thread = Thread(target=fn)
@@ -55,13 +58,13 @@ class Async(object):
         self.late_queue.put(fn)
         self.queue_tick()
 
-    def _async_invoke(self, fn):
+    def _async_invoke(self, fn, context):
         self.normal_queue.put(fn)
-        self.queue_tick()
+        self.queue_tick(context)
 
     def _async_settle_promise(self, promise):
         self.normal_queue.put(promise)
-        self.queue_tick()
+        self.queue_tick(context=promise._trace)
 
     def invoke_later(self, fn):
         if self.trampoline_enabled:
@@ -69,9 +72,9 @@ class Async(object):
         else:
             self.schedule.call_later(0.1, fn)
 
-    def invoke(self, fn, with_trampoline=None):
+    def invoke(self, fn, context, with_trampoline=None):
         if with_trampoline or (self.trampoline_enabled and with_trampoline != False):
-            self._async_invoke(fn)
+            self._async_invoke(fn, context)
         else:
             self.schedule.call(
                 fn
@@ -109,10 +112,16 @@ class Async(object):
         self.have_drained_queues = True
         self.drain_queue(self.late_queue)
 
-    def queue_tick(self):
+    def queue_context_tick(self):
         if not self.is_tick_used:
             self.is_tick_used = True
             self.schedule.call(self.drain_queues)
+
+    def queue_tick(self, context):
+        if not context:
+            self.queue_context_tick()
+        else:
+            context.on_exit(self.queue_context_tick)
 
     def reset(self):
         self.is_tick_used = False
