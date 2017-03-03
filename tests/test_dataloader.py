@@ -43,43 +43,8 @@ def test_supports_loading_multiple_keys_in_one_call():
     assert values == []
 
 
-def test_batches_multiple_requests():
-    identity_loader, load_calls = id_loader()
-
-    @Promise.safe
-    def safe():
-        promise1 = identity_loader.load(1)
-        promise2 = identity_loader.load(2)
-        return promise1, promise2
-
-    promise1, promise2 = safe()
-    value1, value2 = Promise.all([promise1, promise2]).get()
-    assert value1 == 1
-    assert value2 == 2
-
-    assert load_calls == [[1, 2]]
-
-
-def test_batches_multiple_requests_two():
-    identity_loader, load_calls = id_loader()
-
-    @Promise.safe
-    def safe():
-        promise1 = identity_loader.load(1)
-        promise2 = identity_loader.load(2)
-        return Promise.all([promise1, promise2])
-
-    p = safe()
-    value1, value2 = p.get()
-
-    assert value1 == 1
-    assert value2 == 2
-
-    assert load_calls == [[1, 2]]
-
-
 @Promise.safe
-def test_batches_multiple_requests_safe():
+def test_batches_multiple_requests():
     identity_loader, load_calls = id_loader()
 
     promise1 = identity_loader.load(1)

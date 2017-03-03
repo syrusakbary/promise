@@ -428,11 +428,14 @@ class Promise(object):
                 on_error,
             )
 
+            peek = Context.peek_context()
+            if peek:
+                peek.drain_queue()
+
             if self._trace:
                 # If we wait, we drain the queue of the
                 # callbacks waiting on the context exit
                 # so we avoid a blocking state
-                Context.peek_context().drain_queue()
                 self._trace.drain_queue()
 
             self._is_waiting = True
