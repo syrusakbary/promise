@@ -1,4 +1,4 @@
-from threading import Timer
+from threading import Timer, Thread
 
 from .compat import Queue
 
@@ -9,10 +9,18 @@ from .compat import Queue
 class Scheduler(object):
 
     def call(self, fn):
-        # return fn()
+        from .context import Context
+        try:
+            c = Context.peek_context()
+            if not c:
+                fn()
+            else:
+                c.on_exit(fn)
+        except:
+            pass
         # thread = Thread(target=fn)
-        thread = Timer(0.001, fn)
-        thread.start()
+        # thread = Timer(0.001, fn)
+        # thread.start()
 
 
 def get_default_scheduler():
@@ -61,8 +69,8 @@ class Async(object):
         else:
             self.schedule.call_later(0.1, fn)
 
-    def invoke(self, fn):
-        if self.trampoline_enabled:
+    def invoke(self, fn, with_trampoline=None):
+        if with_trampoline or (self.trampoline_enabled and with_trampoline != False):
             self._async_invoke(fn)
         else:
             self.schedule.call(

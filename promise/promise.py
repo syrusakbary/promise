@@ -10,12 +10,12 @@ from .async_ import Async
 from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)
 from .utils import deprecated
+from .context import Context
 
 async = Async()
 
 IS_PYTHON2 = version_info[0] == 2
 
-Context = namedtuple('Context', 'handler,promise,value')
 MAX_LENGTH = 0xFFFF | 0
 CALLBACK_SIZE = 3
 
@@ -82,7 +82,7 @@ class Promise(object):
 
     __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
                  '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
-                 '_is_waiting', '_future'
+                 '_is_waiting', '_future', '_trace'
                  )
 
     def __init__(self, executor=None):
@@ -101,6 +101,7 @@ class Promise(object):
         self._rejection_handler0 = None  # type: Union[Callable, partial]
         self._promise0 = None  # type: Promise
         self._future = None  # type: Future
+        self._trace = Context.peek_context()
 
         self._is_waiting = False
         if executor is not None and executor != internal_executor:
@@ -269,7 +270,8 @@ class Promise(object):
 
     def _settle_promise_from_handler(self, handler, value, promise):
         # promise._push_context()
-        x = try_catch(handler, value)  # , promise
+        with Context():
+            x = try_catch(handler, value)  # , promise
         # promise_created = promise._pop_context()
 
         if x == _error_obj:
@@ -375,22 +377,23 @@ class Promise(object):
     def _resolve_from_executor(self, executor):
         # self._capture_stacktrace()
         # self._push_context()
-        synchronous = True
+        with Context():
+            synchronous = True
 
-        def resolve(value):
-            self._resolve_callback(value)
+            def resolve(value):
+                self._resolve_callback(value)
 
-        def reject(reason):
-            self._reject_callback(reason, synchronous)
+            def reject(reason):
+                self._reject_callback(reason, synchronous)
 
-        error = None
-        try:
-            executor(resolve, reject)
-        except Exception as e:
-            error = e
-            # print traceback.format_exc()
+            error = None
+            try:
+                executor(resolve, reject)
+            except Exception as e:
+                error = e
+                # print traceback.format_exc()
 
-        synchronous = False
+            synchronous = False
         # self._pop_context()
 
         if error is not None:
@@ -424,6 +427,13 @@ class Promise(object):
                 on_result,
                 on_error,
             )
+
+            if self._trace:
+                # If we wait, we drain the queue of the
+                # callbacks waiting on the context exit
+                # so we avoid a blocking state
+                self._trace.drain_queue()
+
             self._is_waiting = True
 
             if timeout is None and IS_PYTHON2:
@@ -604,10 +614,11 @@ class Promise(object):
         add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
         if callable(add_done_callback):
             def executor(resolve, reject):
-                if obj.done():
-                    _process_future_result(resolve, reject)(obj)
-                else:
-                    add_done_callback(_process_future_result(resolve, reject))
+                # if obj.done():
+                #     _process_future_result(resolve, reject)(obj)
+                # else:
+                #     add_done_callback(_process_future_result(resolve, reject))
+                _process_future_result(resolve, reject)(obj)
             promise = cls(executor)
             promise._future = obj
             return promise
@@ -654,6 +665,16 @@ class Promise(object):
     cast = resolve
     promisify = cast
     fulfilled = cast
+
+    @classmethod
+    def safe(cls, fn):
+        from functools import wraps
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            with Context():
+                return fn(*args, **kwargs)
+
+        return wrapper
 
     @classmethod
     def all(cls, values_or_promises):

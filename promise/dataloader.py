@@ -180,7 +180,7 @@ def enqueue_post_promise_job(fn):
     global resolved_promise
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
-    resolved_promise.then(lambda v: async.invoke(fn))  # TODO: Change to async
+    resolved_promise.then(lambda v: async.invoke(fn, with_trampoline=False))  # TODO: Change to async
 
 
 def dispatch_queue(loader):
