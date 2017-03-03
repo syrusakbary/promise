@@ -377,21 +377,21 @@ class Promise(object):
     def _resolve_from_executor(self, executor):
         # self._capture_stacktrace()
         # self._push_context()
-        with Context():
-            synchronous = True
+        # with Context():
+        synchronous = True
 
-            def resolve(value):
-                self._resolve_callback(value)
+        def resolve(value):
+            self._resolve_callback(value)
 
-            def reject(reason):
-                self._reject_callback(reason, synchronous)
+        def reject(reason):
+            self._reject_callback(reason, synchronous)
 
-            error = None
-            try:
-                executor(resolve, reject)
-            except Exception as e:
-                error = e
-                # print traceback.format_exc()
+        error = None
+        try:
+            executor(resolve, reject)
+        except Exception as e:
+            error = e
+            # print traceback.format_exc()
 
             synchronous = False
         # self._pop_context()
@@ -428,11 +428,11 @@ class Promise(object):
                 on_error,
             )
 
-            if self._trace:
+            if target._trace:
                 # If we wait, we drain the queue of the
                 # callbacks waiting on the context exit
                 # so we avoid a blocking state
-                self._trace.drain_queue()
+                target._trace.drain_queue()
 
             self._is_waiting = True
 
