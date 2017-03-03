@@ -270,8 +270,8 @@ class Promise(object):
 
     def _settle_promise_from_handler(self, handler, value, promise):
         # promise._push_context()
-        with Context():
-            x = try_catch(handler, value)  # , promise
+        # with Context():
+        x = try_catch(handler, value)  # , promise
         # promise_created = promise._pop_context()
 
         if x == _error_obj:
@@ -432,6 +432,7 @@ class Promise(object):
                 # If we wait, we drain the queue of the
                 # callbacks waiting on the context exit
                 # so we avoid a blocking state
+                Context.peek_context().drain_queue()
                 self._trace.drain_queue()
 
             self._is_waiting = True
@@ -614,11 +615,11 @@ class Promise(object):
         add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
         if callable(add_done_callback):
             def executor(resolve, reject):
-                # if obj.done():
-                #     _process_future_result(resolve, reject)(obj)
-                # else:
-                #     add_done_callback(_process_future_result(resolve, reject))
-                _process_future_result(resolve, reject)(obj)
+                if obj.done():
+                    _process_future_result(resolve, reject)(obj)
+                else:
+                    add_done_callback(_process_future_result(resolve, reject))
+                # _process_future_result(resolve, reject)(obj)
             promise = cls(executor)
             promise._future = obj
             return promise
