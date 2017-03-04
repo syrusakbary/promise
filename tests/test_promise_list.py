@@ -19,7 +19,7 @@ def test_bad_promises():
     with raises(Exception) as exc_info:
         all_promises.get()
 
-    assert str(exc_info.value) == "Received non-iterable in for Promise list."
+    assert str(exc_info.value) == "PromiseList requires an iterable. Received None."
 
 
 def test_promise_basic():

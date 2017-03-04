@@ -39,7 +39,7 @@ class PromiseList(object):
                 )
 
         if not isinstance(values, Iterable):
-            err = Exception("Received non-iterable in for Promise list.")
+            err = Exception("PromiseList requires an iterable. Received {}.".format(repr(values)))
             self.promise._reject_callback(err, False)
             return
 
