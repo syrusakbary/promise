@@ -54,9 +54,9 @@ class Async(object):
     def have_items_queued(self):
         return self.is_tick_used or self.have_drained_queues
 
-    def _async_invoke_later(self, fn):
+    def _async_invoke_later(self, fn, context):
         self.late_queue.put(fn)
-        self.queue_tick()
+        self.queue_tick(context)
 
     def _async_invoke(self, fn, context):
         self.normal_queue.put(fn)
@@ -66,9 +66,9 @@ class Async(object):
         self.normal_queue.put(promise)
         self.queue_tick(context=promise._trace)
 
-    def invoke_later(self, fn):
+    def invoke_later(self, fn, context):
         if self.trampoline_enabled:
-            self._async_invoke_later(fn)
+            self._async_invoke_later(fn, context)
         else:
             self.schedule.call_later(0.1, fn)
 

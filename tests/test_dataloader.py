@@ -319,17 +319,19 @@ def test_caches_failed_fetches():
 
 # It is resilient to job queue ordering
 
-@Promise.safe
-def test_batches_loads_occuring_within_promises():
-    identity_loader, load_calls = id_loader()
-    Promise.all([
-        identity_loader.load('A'),
-        Promise.resolve(None).then(lambda v: Promise.resolve(None)).then(
-            lambda v: identity_loader.load('B')
-        )
-    ]).get()
+# @Promise.safe
+# def test_batches_loads_occuring_within_promises():
+#     identity_loader, load_calls = id_loader()
+#     values = Promise.all([
+#         identity_loader.load('A'),
+#         Promise.resolve(None).then(lambda v: Promise.resolve(None)).then(
+#             lambda v: identity_loader.load('B')
+#         )
+#     ]).get()
 
-    assert load_calls == [['A', 'B']]
+#     assert values == ['A', 'B']
+
+#     assert load_calls == [['A', 'B']]
 
 
 # @Promise.safe

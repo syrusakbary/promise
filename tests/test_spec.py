@@ -553,3 +553,12 @@ def test_promise_resolved_after():
     e.wait()
 
     assert 1 == c.value()
+
+
+def test_batches_loads_occuring_within_promises():
+    v1 = Promise.resolve('A')
+    v2 = Promise.resolve(None).then(Promise.resolve).then(
+            lambda v: Promise.resolve(None).then(lambda v:Promise.resolve('B'))
+         )
+
+    assert [v1.get(), v2.get()] == ['A', 'B']

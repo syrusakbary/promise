@@ -15,6 +15,7 @@ from .context import Context
 async = Async()
 
 IS_PYTHON2 = version_info[0] == 2
+DEFAULT_TIMEOUT = 1.
 
 MAX_LENGTH = 0xFFFF | 0
 CALLBACK_SIZE = 3
@@ -399,7 +400,7 @@ class Promise(object):
         if error is not None:
             self._reject_callback(error, True)
 
-    def _wait(self, timeout=None):
+    def _wait(self, timeout=1):
         target = self._target()
 
         if self._state == States.PENDING and not self._is_waiting:
@@ -437,7 +438,7 @@ class Promise(object):
             self._is_waiting = True
 
             if timeout is None and IS_PYTHON2:
-                float("Inf")
+                timeout = float("Inf")
 
             waited = event.wait(timeout)
             if not waited:
@@ -445,7 +446,7 @@ class Promise(object):
 
     def get(self, wait=True, timeout=None):
         if wait or timeout:
-            self._wait(timeout)
+            self._wait(timeout or DEFAULT_TIMEOUT)
 
         return self._settled_value(_raise=True)
 
@@ -637,7 +638,7 @@ class Promise(object):
             return cls(executor)
 
         if iscoroutine(obj):
-            return cls._try_convert_to_promise(ensure_future(obj))
+            return cls._try_convert_to_promise(ensure_future(obj), context)
 
         return obj
 
@@ -677,41 +678,46 @@ class Promise(object):
 
         return wrapper
 
+    # @classmethod
+    # def all(cls, values_or_promises):
+    #     # Type: (Iterable[Promise, Any]) -> Promise
+    #     """
+    #     A special function that takes a bunch of promises
+    #     and turns them into a promise for a vector of values.
+    #     In other words, this turns an list of promises for values
+    #     into a promise for a list of values.
+    #     """
+    #     _len = len(values_or_promises)
+    #     if _len == 0:
+    #         return cls.resolve(values_or_promises)
+
+    #     promises = (
+    #         cls.promisify(v_or_p)
+    #         if is_thenable(v_or_p) else cls.resolve(v_or_p)
+    #         for v_or_p in values_or_promises)  # type: Iterator[Promise]
+
+    #     all_promise = cls()  # type: Promise
+    #     counter = CountdownLatch(_len)
+    #     values = [None] * _len  # type: List[Any]
+
+    #     def handle_success(original_position):
+    #         # type: (int) -> Callable
+    #         def ret(value):
+    #             values[original_position] = value
+    #             if counter.dec() == 0:
+    #                 all_promise.fulfill(values)
+
+    #         return ret
+
+    #     for i, p in enumerate(promises):
+    #         p.done(handle_success(i), all_promise.reject)  # type: ignore
+
+    #     return all_promise
+
     @classmethod
-    def all(cls, values_or_promises):
-        # Type: (Iterable[Promise, Any]) -> Promise
-        """
-        A special function that takes a bunch of promises
-        and turns them into a promise for a vector of values.
-        In other words, this turns an list of promises for values
-        into a promise for a list of values.
-        """
-        _len = len(values_or_promises)
-        if _len == 0:
-            return cls.resolve(values_or_promises)
-
-        promises = (
-            cls.promisify(v_or_p)
-            if is_thenable(v_or_p) else cls.resolve(v_or_p)
-            for v_or_p in values_or_promises)  # type: Iterator[Promise]
-
-        all_promise = cls()  # type: Promise
-        counter = CountdownLatch(_len)
-        values = [None] * _len  # type: List[Any]
-
-        def handle_success(original_position):
-            # type: (int) -> Callable
-            def ret(value):
-                values[original_position] = value
-                if counter.dec() == 0:
-                    all_promise.fulfill(values)
-
-            return ret
-
-        for i, p in enumerate(promises):
-            p.done(handle_success(i), all_promise.reject)  # type: ignore
-
-        return all_promise
+    def all(cls, promises):
+        from .promise_list import PromiseList
+        return PromiseList(promises).promise()
 
     @classmethod
     def for_dict(cls, m):

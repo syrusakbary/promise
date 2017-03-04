@@ -54,8 +54,10 @@ class DataLoader(object):
             if cached_promise:
                 return cached_promise
 
+        print "1. load:", key
         # Otherwise, produce a new Promise for this value.
         promise = Promise(partial(self.do_resolve_reject, key))
+        print "2. end load"
 
         # If caching, cache this promise.
         if self._cache:
@@ -70,7 +72,7 @@ class DataLoader(object):
             resolve=resolve,
             reject=reject
         ))
-
+        print "do_resolve_reject"
         # Determine if a dispatch of this queue should be scheduled.
         # A single dispatch should be scheduled per queue at the time when the
         # queue changes from "empty" to "full".
@@ -171,16 +173,30 @@ class DataLoader(object):
 resolved_promise = None
 
 
+
+from .promise import async
+
+# def enqueue_post_promise_job(fn):
+#     # t.run()
+#     # from threading import Timer
+#     # t = Timer(0.10, fn)
+#     # t.run()
+#     # return fn()
+#     global resolved_promise
+#     if not resolved_promise:
+#         resolved_promise = Promise.resolve(None)
+#     resolved_promise.then(lambda v: queue.invoke(fn))  # TODO: Change to async
+
+from .context import Context
+
 def enqueue_post_promise_job(fn):
-    # t.run()
-    # from threading import Timer
-    # t = Timer(0.10, fn)
-    # t.run()
-    # return fn()
     global resolved_promise
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
-    resolved_promise.then(lambda v: async.invoke(fn, with_trampoline=False))  # TODO: Change to async
+    # queue.invoke(fn)
+    async.invoke(fn, context=Context.peek_context())
+    # Promise.resolve(None).then(lambda v: async.invoke(fn, context=Context.peek_context()))
+    # resolved_promise.then(lambda v: queue.invoke(fn, context=Context.peek_context()))
 
 
 def dispatch_queue(loader):

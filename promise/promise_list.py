@@ -1,0 +1,118 @@
+from functools import partial
+from collections import Iterable
+
+from .promise import internal_executor, Promise
+
+
+class PromiseList(object):
+    def __init__(self, values):
+        promise = self._promise = Promise(internal_executor)
+        # if (isinstance(values, Promise)):
+        #     # promise._propagate_from(values)
+        #     pass
+
+        self._values = values
+        self._length = 0
+        self._total_resolved = 0
+        self._init()
+
+    def __len__(self):
+        return self._length
+
+    def promise(self):
+        return self._promise
+
+    def _init(self):
+        values = Promise._try_convert_to_promise(self._values, self._promise)
+        if isinstance(values, Promise):
+            values = values._target()
+            if values.is_fulfilled:
+                values = values._value()
+            elif values.is_rejected:
+                self._reject(values._reason())
+            # Is pending
+            else:
+                self._promise._is_async_guaranteed = True
+                return values._then(
+                    self._init,
+                    self._reject,
+                )
+
+        if not isinstance(values, Iterable):
+            err = Exception("Received non-iterable in for Promise list.")
+            self._promise._reject_callback(err, False)
+            return
+
+        if not values:
+            self._resolve([])
+            return
+
+        self._iterate(values)
+
+    def _iterate(self, values):
+        is_resolved = False
+        self._length = len(values)
+        self._values = [ None ] * self._length
+
+        result = self._promise
+
+        for i, val in enumerate(values):
+            maybe_promise = Promise._try_convert_to_promise(val, self._promise)
+            if isinstance(maybe_promise, Promise):
+                maybe_promise = maybe_promise._target()
+                if is_resolved:
+                    # maybe_promise.suppressUnhandledRejections
+                    pass
+                elif maybe_promise.is_pending:
+                    self._values[i] = maybe_promise
+                    maybe_promise._add_callbacks(
+                        partial(self._promise_fulfilled, i=i),
+                        self._promise_rejected,
+                        None
+                    )
+                elif maybe_promise.is_fulfilled:
+                    is_resolved = self._promise_fulfilled(maybe_promise._value(), i)
+                elif maybe_promise.is_rejected:
+                    is_resolved = self._promise_rejected(maybe_promise._reason())
+
+            elif not is_resolved:
+                is_resolved = self._promise_fulfilled(maybe_promise, i)
+
+            if is_resolved:
+                break
+
+        if not is_resolved:
+            result._is_async_guaranteed = True
+
+    def _promise_fulfilled(self, value, i):
+        assert not self.is_resolved
+        assert isinstance(self._values, Iterable)
+        assert isinstance(i, int)
+        self._values[i] = value
+        self._total_resolved = self._total_resolved+1
+        if self._total_resolved >= self._length:
+            self._resolve(self._values)
+            return True
+        return False
+
+    def _promise_rejected(self, reason):
+        assert not self.is_resolved
+        assert isinstance(self._values, Iterable)
+        self._total_resolved = self._total_resolved+1
+        self._reject(reason)
+        return True
+
+    @property
+    def is_resolved(self):
+        return self._values is None
+
+    def _resolve(self, value):
+        assert not self.is_resolved
+        assert not isinstance(value, Promise)
+        self._values = None
+        self._promise._fulfill(value)
+
+    def _reject(self, reason):
+        assert not self.is_resolved
+        self._values = None
+        self._promise._reject_callback(reason, False)
