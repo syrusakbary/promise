@@ -59,3 +59,23 @@ def test_benchmark_promisify_custom(benchmark):
     result = benchmark(create_promise)
 
     assert isinstance(result, Promise)
+
+
+def test_benchmark_promise_all(benchmark):
+    values = range(10000)
+    def create_promise():  # unnecessary function call
+        return Promise.all(values)
+
+    result = benchmark(create_promise)
+
+    assert isinstance(result, Promise)
+
+
+def test_benchmark_promise_all_promise(benchmark):
+    values = [Promise.resolve(i) for i in range(10000)]
+    def create_promise():  # unnecessary function call
+        return Promise.all(values)
+
+    result = benchmark(create_promise)
+
+    assert isinstance(result, Promise)

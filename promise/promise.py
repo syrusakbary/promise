@@ -678,46 +678,10 @@ class Promise(object):
 
         return wrapper
 
-    # @classmethod
-    # def all(cls, values_or_promises):
-    #     # Type: (Iterable[Promise, Any]) -> Promise
-    #     """
-    #     A special function that takes a bunch of promises
-    #     and turns them into a promise for a vector of values.
-    #     In other words, this turns an list of promises for values
-    #     into a promise for a list of values.
-    #     """
-    #     _len = len(values_or_promises)
-    #     if _len == 0:
-    #         return cls.resolve(values_or_promises)
-
-    #     promises = (
-    #         cls.promisify(v_or_p)
-    #         if is_thenable(v_or_p) else cls.resolve(v_or_p)
-    #         for v_or_p in values_or_promises)  # type: Iterator[Promise]
-
-    #     all_promise = cls()  # type: Promise
-    #     counter = CountdownLatch(_len)
-    #     values = [None] * _len  # type: List[Any]
-
-    #     def handle_success(original_position):
-    #         # type: (int) -> Callable
-    #         def ret(value):
-    #             values[original_position] = value
-    #             if counter.dec() == 0:
-    #                 all_promise.fulfill(values)
-
-    #         return ret
-
-    #     for i, p in enumerate(promises):
-    #         p.done(handle_success(i), all_promise.reject)  # type: ignore
-
-    #     return all_promise
-
     @classmethod
     def all(cls, promises):
         from .promise_list import PromiseList
-        return PromiseList(promises).promise()
+        return PromiseList(promises).promise
 
     @classmethod
     def for_dict(cls, m):
