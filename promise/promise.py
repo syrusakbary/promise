@@ -11,6 +11,7 @@ from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)
 from .utils import deprecated
 from .context import Context
+from .promise_list import PromiseList
 
 async = Async()
 
@@ -680,8 +681,7 @@ class Promise(object):
 
     @classmethod
     def all(cls, promises):
-        from .promise_list import PromiseList
-        return PromiseList(promises).promise
+        return PromiseList(promises, promise_class=cls).promise
 
     @classmethod
     def for_dict(cls, m):

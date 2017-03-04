@@ -1,15 +1,14 @@
 from functools import partial
 from collections import Iterable
 
-from .promise import internal_executor, Promise
-
 
 class PromiseList(object):
 
-    __slots__ = ('_values', '_length', '_total_resolved', 'promise')
+    __slots__ = ('_values', '_length', '_total_resolved', 'promise', '_promise_class')
 
-    def __init__(self, values):
-        self.promise = Promise(internal_executor)
+    def __init__(self, values, promise_class):
+        self._promise_class = promise_class
+        self.promise = self._promise_class()
         # if (isinstance(values, Promise)):
         #     # promise._propagate_from(values)
         #     pass
@@ -23,6 +22,7 @@ class PromiseList(object):
         return self._length
 
     def _init(self):
+        Promise = self._promise_class
         values = Promise._try_convert_to_promise(self._values, self.promise)
         if isinstance(values, Promise):
             values = values._target()
@@ -50,6 +50,7 @@ class PromiseList(object):
         self._iterate(values)
 
     def _iterate(self, values):
+        Promise = self._promise_class
         is_resolved = False
         self._length = len(values)
         self._values = [ None ] * self._length
@@ -89,7 +90,7 @@ class PromiseList(object):
         # assert isinstance(self._values, Iterable)
         # assert isinstance(i, int)
         self._values[i] = value
-        self._total_resolved = self._total_resolved+1
+        self._total_resolved += 1
         if self._total_resolved >= self._length:
             self._resolve(self._values)
             return True
@@ -98,7 +99,7 @@ class PromiseList(object):
     def _promise_rejected(self, reason):
         # assert not self.is_resolved
         # assert isinstance(self._values, Iterable)
-        self._total_resolved = self._total_resolved+1
+        self._total_resolved += 1
         self._reject(reason)
         return True
 
@@ -108,7 +109,7 @@ class PromiseList(object):
 
     def _resolve(self, value):
         assert not self.is_resolved
-        assert not isinstance(value, Promise)
+        assert not isinstance(value, self._promise_class)
         self._values = None
         self.promise._fulfill(value)
 

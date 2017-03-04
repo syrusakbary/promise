@@ -5,7 +5,7 @@ from promise.promise_list import PromiseList
 
 
 def all(promises):
-    return PromiseList(promises).promise
+    return PromiseList(promises, Promise).promise
 
 
 def test_empty_promises():
