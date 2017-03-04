@@ -54,10 +54,8 @@ class DataLoader(object):
             if cached_promise:
                 return cached_promise
 
-        print "1. load:", key
         # Otherwise, produce a new Promise for this value.
         promise = Promise(partial(self.do_resolve_reject, key))
-        print "2. end load"
 
         # If caching, cache this promise.
         if self._cache:
@@ -72,7 +70,6 @@ class DataLoader(object):
             resolve=resolve,
             reject=reject
         ))
-        print "do_resolve_reject"
         # Determine if a dispatch of this queue should be scheduled.
         # A single dispatch should be scheduled per queue at the time when the
         # queue changes from "empty" to "full".
