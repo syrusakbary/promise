@@ -614,7 +614,7 @@ class Promise(object):
             return obj
 
         add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
-        if callable(add_done_callback):
+        if add_done_callback and callable(add_done_callback):
             def executor(resolve, reject):
                 if obj.done():
                     _process_future_result(resolve, reject)(obj)
@@ -626,13 +626,13 @@ class Promise(object):
             return promise
 
         done = getattr(obj, "done", None)  # type: Optional[Callable]
-        if callable(done):
+        if done and callable(done):
             def executor(resolve, reject):
                 done(resolve, reject)
             return cls(executor)
 
         then = getattr(obj, "then", None)  # type: Optional[Callable]
-        if callable(then):
+        if then and callable(then):
             def executor(resolve, reject):
                 then(resolve, reject)
             return cls(executor)

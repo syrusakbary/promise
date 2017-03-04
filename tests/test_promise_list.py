@@ -3,8 +3,9 @@ from pytest import raises
 from promise import Promise
 from promise.promise_list import PromiseList
 
+
 def all(promises):
-    return PromiseList(promises).promise()
+    return PromiseList(promises).promise
 
 
 def test_empty_promises():
