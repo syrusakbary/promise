@@ -1,7 +1,7 @@
-from threading import Timer, Thread
+# from threading import Timer, Thread
 
 from .compat import Queue
-from .context import Context
+# from .context import Context
 
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
 
@@ -9,7 +9,6 @@ from .context import Context
 class Scheduler(object):
 
     def call(self, fn):
-        
         # thread = Thread(target=fn)
         # thread = Timer(0.001, fn)
         # fn = thread.start
@@ -18,7 +17,7 @@ class Scheduler(object):
             # if not c:
             fn()
             # else:
-                # c.on_exit(fn)
+            #     c.on_exit(fn)
         except:
             pass
         # thread = Thread(target=fn)
@@ -72,8 +71,8 @@ class Async(object):
         else:
             self.schedule.call_later(0.1, fn)
 
-    def invoke(self, fn, context, with_trampoline=None):
-        if with_trampoline or (self.trampoline_enabled and with_trampoline != False):
+    def invoke(self, fn, context):
+        if self.trampoline_enabled:
             self._async_invoke(fn, context)
         else:
             self.schedule.call(

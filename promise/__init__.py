@@ -1,3 +1,3 @@
-from .promise import Promise, promise_for_dict, promisify, is_thenable, async
+from .promise import Promise, promise_for_dict, promisify, is_thenable, async_instance
 
-__all__ = ['Promise', 'promise_for_dict', 'promisify', 'is_thenable', 'async']
+__all__ = ['Promise', 'promise_for_dict', 'promisify', 'is_thenable', 'async_instance']

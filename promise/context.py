@@ -1,4 +1,7 @@
+from typing import List, Callable # flake8: noqa
+
 context_stack = []
+
 
 class Context(object):
 
@@ -6,8 +9,10 @@ class Context(object):
 
     def __init__(self):
         self._parent = self.peek_context()
+        if self._parent:
+            self._parent.on_exit(self._exit)
         self._exited = False
-        self._exit_fns = []
+        self._exit_fns = []  # type: List[Callable]
 
     def push_context(self):
         # if self._trace:
@@ -20,9 +25,13 @@ class Context(object):
 
     def __exit__(self, type, value, traceback):
         assert not self._exited, "Can't exit a Context twice"
-        self.pop_context()
-        self._exited = True
-        self.drain_queue()
+        self._exit()
+
+    def _exit(self):
+        if not self._exited:
+            self._exited = True
+            self.pop_context()
+            self.drain_queue()
 
     def drain_queue(self):
         exit_fns = self._exit_fns

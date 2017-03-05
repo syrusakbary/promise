@@ -1,8 +1,10 @@
 from collections import Iterable, namedtuple
 from functools import partial
 
-from promise import Promise, async
-from typing import Sized  # flake8: noqa
+from typing import List, Sized  # flake8: noqa
+
+from .promise import Promise, async_instance
+from .context import Context
 
 
 def identity(x):
@@ -169,10 +171,6 @@ class DataLoader(object):
 # Private: cached resolved Promise instance
 resolved_promise = None
 
-
-
-from .promise import async
-
 # def enqueue_post_promise_job(fn):
 #     # t.run()
 #     # from threading import Timer
@@ -184,14 +182,12 @@ from .promise import async
 #         resolved_promise = Promise.resolve(None)
 #     resolved_promise.then(lambda v: queue.invoke(fn))  # TODO: Change to async
 
-from .context import Context
-
 def enqueue_post_promise_job(fn):
     global resolved_promise
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
     # queue.invoke(fn)
-    async.invoke(fn, context=Context.peek_context())
+    async_instance.invoke(fn, context=Context.peek_context())
     # Promise.resolve(None).then(lambda v: async.invoke(fn, context=Context.peek_context()))
     # resolved_promise.then(lambda v: queue.invoke(fn, context=Context.peek_context()))
 

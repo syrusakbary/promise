@@ -53,7 +53,7 @@ class PromiseList(object):
         Promise = self._promise_class
         is_resolved = False
         self._length = len(values)
-        self._values = [ None ] * self._length
+        self._values = [None] * self._length
 
         result = self.promise
 

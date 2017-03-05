@@ -3,7 +3,7 @@ from functools import partial
 from sys import version_info
 from threading import Event, RLock
 
-from typing import (Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
+from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
                     Union)
 
 from .async_ import Async
@@ -13,7 +13,7 @@ from .utils import deprecated
 from .context import Context
 from .promise_list import PromiseList
 
-async = Async()
+async_instance = Async()
 
 IS_PYTHON2 = version_info[0] == 2
 DEFAULT_TIMEOUT = 0.5
@@ -103,7 +103,7 @@ class Promise(object):
         self._rejection_handler0 = None  # type: Union[Callable, partial]
         self._promise0 = None  # type: Promise
         self._future = None  # type: Future
-        self._event_instance = None
+        self._event_instance = None # type: Event
         self._trace = Context.peek_context()
 
         self._is_waiting = False
@@ -194,7 +194,7 @@ class Promise(object):
             if self._is_async_guaranteed:
                 self._settle_promises()
             else:
-                async.settle_promises(self)
+                async_instance.settle_promises(self)
 
     def _reject(self, reason):
         self._state = States.REJECTED
@@ -203,21 +203,21 @@ class Promise(object):
 
         if self._is_final:
             assert self._length == 0
-            return async.fatal_error(reason)
+            return async_instance.fatal_error(reason)
 
         if self._length > 0:
-            async.settle_promises(self)
+            async_instance.settle_promises(self)
         else:
             self._ensure_possible_rejection_handled()
 
         if self._is_async_guaranteed:
             self._settle_promises()
         else:
-            async.settle_promises(self)
+            async_instance.settle_promises(self)
 
     def _ensure_possible_rejection_handled(self):
         # self._rejection_is_unhandled = True
-        # async.invoke_later(self._notify_unhandled_rejection, self)
+        # async_instance.invoke_later(self._notify_unhandled_rejection, self)
         pass
 
     def _reject_callback(self, reason, synchronous=False):
@@ -496,7 +496,7 @@ class Promise(object):
                 value = target._fulfillment_handler0
                 handler = did_reject
                 # target._rejection_is_unhandled = False
-            async.invoke(
+            async_instance.invoke(
                 partial(self._settle_promise, promise, handler, value),
                 context=target._trace,
                 # target._settle_promise instead?
@@ -546,12 +546,12 @@ class Promise(object):
         promise._is_final = True
 
     def done_all(self, handlers=None):
-        # type: (Promise, List[Callable]) -> List[Promise]
+        # type: (Promise, List[Callable]) -> None
         """
         :type handlers: list[(Any) -> object] | list[((Any) -> object, (Any) -> object)]
         """
         if not handlers:
-            return []
+            return
 
         for handler in handlers:
             if isinstance(handler, tuple):
