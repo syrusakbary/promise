@@ -138,7 +138,9 @@ def test_wait_if():
 def test_wait_timeout():
     p1 = df(5, 0.1)
     assert p1.is_pending
-    p1._wait(timeout=0.05)
+    with raises(Exception) as exc_info:
+        p1._wait(timeout=0.05)
+    assert str(exc_info.value) == "Timeout"
     assert p1.is_pending
     p1._wait()
     assert p1.is_fulfilled
@@ -164,7 +166,9 @@ def test_get_if():
 def test_get_timeout():
     p1 = df(5, 0.1)
     assert p1.is_pending
-    v = p1.get(timeout=0.05)
+    with raises(Exception) as exc_info:
+        p1._wait(timeout=0.05)
+    assert str(exc_info.value) == "Timeout"
     assert p1.is_pending
     v = p1.get()
     assert p1.is_fulfilled

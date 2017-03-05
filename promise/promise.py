@@ -16,7 +16,7 @@ from .promise_list import PromiseList
 async = Async()
 
 IS_PYTHON2 = version_info[0] == 2
-DEFAULT_TIMEOUT = 1.
+DEFAULT_TIMEOUT = 0.5
 
 MAX_LENGTH = 0xFFFF | 0
 CALLBACK_SIZE = 3
@@ -156,7 +156,7 @@ class Promise(object):
             self._reject(make_self_resolution_error())
             return
 
-        if promise.is_pending:
+        if promise._state == States.PENDING:
             len = self._length
             if len > 0:
                 promise._migrate_callback0(self)
@@ -166,9 +166,9 @@ class Promise(object):
             self._is_following = True
             self._length = 0
             self._set_followee(promise)
-        elif promise.is_fulfilled:
+        elif promise._state == States.FULFILLED:
             self._fulfill(promise._value())
-        elif promise.is_rejected:
+        elif promise._state == States.REJECTED:
             self._reject(promise._reason())
 
     def _settled_value(self, _raise=False):
@@ -263,7 +263,7 @@ class Promise(object):
         elif is_promise:
             if async_guaranteed:
                 promise._is_async_guaranteed = True
-            if self.is_fulfilled:
+            if self._state == States.FULFILLED:
                 promise._fulfill(value)
             else:
                 promise._reject(value)
@@ -369,7 +369,7 @@ class Promise(object):
     def _settle_promises(self):
         length = self._length
         if length > 0:
-            if self.is_rejected:
+            if self._state == States.REJECTED:
                 reason = self._fulfillment_handler0
                 self._settle_promise0(self._rejection_handler0, reason)
                 self._reject_promises(length, reason)
@@ -410,44 +410,46 @@ class Promise(object):
             self._event_instance = Event()
         return self._event_instance
 
-    def _wait(self, timeout=1):
-        if self._trace:
+    def _wait(self, timeout=None):
+        target = self._target()
+        if target._trace:
             # If we wait, we drain the queue of the
             # callbacks waiting on the context exit
             # so we avoid a blocking state
-            self._trace.drain_queue()
+            target._trace.drain_queue()
 
         if timeout is None and IS_PYTHON2:
             timeout = float("Inf")
 
-        waited = self._target()._event().wait(timeout)
-        # if not waited:
-        #     raise Exception("Timeout")
+        waited = target._event().wait(timeout)
+        if not waited:
+            raise Exception("Timeout")
 
     def get(self, wait=True, timeout=None):
         target = self._target()
         if wait or timeout:
-            target._wait(timeout or DEFAULT_TIMEOUT)
+            self._wait(timeout or DEFAULT_TIMEOUT)
 
-        return target._settled_value(_raise=True)
+        return self._target_settled_value(_raise=True)
 
 
-    def _target_settled_value(self):
-        return self._target()._settled_value()
+    def _target_settled_value(self, _raise=False):
+        return self._target()._settled_value(_raise)
 
     _value = _reason = _target_settled_value
     value = reason = property(_target_settled_value)
 
     def __repr__(self):
         hex_id = hex(id(self))
-        if self._state == States.PENDING:
+        state = self._state
+        if state == States.PENDING:
             return "<Promise at {} pending>".format(hex_id)
-        elif self._state == States.FULFILLED:
+        elif state == States.FULFILLED:
             return "<Promise at {} fulfilled with {}>".format(
                 hex_id,
                 repr(self._rejection_handler0)
             )
-        elif self._state == States.REJECTED:
+        elif state == States.REJECTED:
             return "<Promise at {} rejected with {}>".format(
                 hex_id,
                 repr(self._fulfillment_handler0)
@@ -483,11 +485,14 @@ class Promise(object):
         promise = self.__class__(internal_executor)
         target = self._target()
 
-        if not target.is_pending:
-            if target.is_fulfilled:
+        state = target._state
+        if state == States.PENDING:
+            target._add_callbacks(did_fulfill, did_reject, promise)
+        else:
+            if state == States.FULFILLED:
                 value = target._rejection_handler0
                 handler = did_fulfill
-            elif target.is_rejected:
+            elif state == States.REJECTED:
                 value = target._fulfillment_handler0
                 handler = did_reject
                 # target._rejection_is_unhandled = False
@@ -499,8 +504,6 @@ class Promise(object):
                 # target,
                 # Context(handler, promise, value),
             )
-        else:
-            target._add_callbacks(did_fulfill, did_reject, promise)
 
         return promise
 
