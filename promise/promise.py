@@ -411,6 +411,11 @@ class Promise(object):
         return self._event_instance
 
     def _wait(self, timeout=None):
+        if not self.is_pending:
+            # We return if the promise is already
+            # fulfilled or rejected
+            return
+
         target = self._target()
         if target._trace:
             # If we wait, we drain the queue of the
