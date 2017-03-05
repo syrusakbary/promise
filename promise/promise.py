@@ -84,7 +84,7 @@ class Promise(object):
 
     __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
                  '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
-                 '_is_waiting', '_future', '_trace'
+                 '_is_waiting', '_future', '_trace', '_event_instance'
                  )
 
     def __init__(self, executor=None):
@@ -103,6 +103,7 @@ class Promise(object):
         self._rejection_handler0 = None  # type: Union[Callable, partial]
         self._promise0 = None  # type: Promise
         self._future = None  # type: Future
+        self._event_instance = None
         self._trace = Context.peek_context()
 
         self._is_waiting = False
@@ -187,6 +188,7 @@ class Promise(object):
             return self._reject(err)
         self._state = States.FULFILLED
         self._rejection_handler0 = value
+        self._event().set()
 
         if self._length > 0:
             if self._is_async_guaranteed:
@@ -197,6 +199,7 @@ class Promise(object):
     def _reject(self, reason):
         self._state = States.REJECTED
         self._fulfillment_handler0 = reason
+        self._event().set()
 
         if self._is_final:
             assert self._length == 0
@@ -360,6 +363,7 @@ class Promise(object):
     def _set_followee(self, promise):
         assert self._is_following
         assert not isinstance(self._rejection_handler0, Promise)
+        self._event_instance = promise._event_instance
         self._rejection_handler0 = promise
 
     def _settle_promises(self):
@@ -401,58 +405,38 @@ class Promise(object):
         if error is not None:
             self._reject_callback(error, True)
 
+    def _event(self):
+        if not self._event_instance:
+            self._event_instance = Event()
+        return self._event_instance
+
     def _wait(self, timeout=1):
-        target = self._target()
+        if self._trace:
+            # If we wait, we drain the queue of the
+            # callbacks waiting on the context exit
+            # so we avoid a blocking state
+            self._trace.drain_queue()
 
-        if self._state == States.PENDING and not self._is_waiting:
-            event = Event()
+        if timeout is None and IS_PYTHON2:
+            timeout = float("Inf")
 
-            # Simpler way of doing it, not working with following promises
-
-            # self._add_callbacks(
-            #     lambda result: event.set(),
-            #     lambda error: event.set(),
-            #     None,
-            # )
-
-            self._is_following = False
-
-            def on_result(result):
-                event.set()
-                self._resolve_callback(result)
-
-            def on_error(error):
-                event.set()
-                self._reject_callback(error)
-
-            target._then(
-                on_result,
-                on_error,
-            )
-
-            if target._trace:
-                # If we wait, we drain the queue of the
-                # callbacks waiting on the context exit
-                # so we avoid a blocking state
-                target._trace.drain_queue()
-
-            self._is_waiting = True
-
-            if timeout is None and IS_PYTHON2:
-                timeout = float("Inf")
-
-            waited = event.wait(timeout)
-            if not waited:
-                self._is_waiting = False
+        waited = self._target()._event().wait(timeout)
+        # if not waited:
+        #     raise Exception("Timeout")
 
     def get(self, wait=True, timeout=None):
+        target = self._target()
         if wait or timeout:
-            self._wait(timeout or DEFAULT_TIMEOUT)
+            target._wait(timeout or DEFAULT_TIMEOUT)
 
-        return self._settled_value(_raise=True)
+        return target._settled_value(_raise=True)
 
-    _value = _reason = _settled_value
-    value = reason = property(_settled_value)
+
+    def _target_settled_value(self):
+        return self._target()._settled_value()
+
+    _value = _reason = _target_settled_value
+    value = reason = property(_target_settled_value)
 
     def __repr__(self):
         hex_id = hex(id(self))
@@ -473,19 +457,19 @@ class Promise(object):
     def is_pending(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise is still pending. Could be wrong the moment the function returns."""
-        return self._state == States.PENDING
+        return self._target()._state == States.PENDING
 
     @property
     def is_fulfilled(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been fulfilled. Could be wrong the moment the function returns."""
-        return self._state == States.FULFILLED
+        return self._target()._state == States.FULFILLED
 
     @property
     def is_rejected(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
-        return self._state == States.REJECTED
+        return self._target()._state == States.REJECTED
 
     def catch(self, on_rejection):
         # type: (Promise, Union[Callable, partial]) -> Promise
@@ -662,6 +646,7 @@ class Promise(object):
             # ret._capture_stacktrace()
             ret._state = States.FULFILLED
             ret._rejection_handler0 = obj
+            ret._event().set()
 
         return ret
 
