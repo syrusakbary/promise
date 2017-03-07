@@ -39,12 +39,10 @@ BASE_TYPES = integer_types + string_types + (
     binary_type,
 )
 
-
-class States(object):
-    # These are the potential states of a promise
-    PENDING = -1
-    REJECTED = 0
-    FULFILLED = 1
+# These are the potential states of a promise
+STATE_PENDING = -1
+STATE_REJECTED = 0
+STATE_FULFILLED = 1
 
 
 def make_self_resolution_error():
@@ -65,25 +63,6 @@ def try_catch(handler, *args, **kwargs):
         return _error_obj
 
 
-class CountdownLatch(object):
-    __slots__ = ('_lock', 'count')
-
-    def __init__(self, count):
-        # type: (CountdownLatch, int) -> None
-        assert count >= 0, "count needs to be greater or equals to 0. Got: %s" % count
-        self._lock = RLock()
-        self.count = count
-
-    def dec(self):
-        # type: (CountdownLatch) -> int
-        with self._lock:
-            assert self.count > 0, "count needs to be greater or equals to 0. Got: %s" % self.count
-            self.count -= 1
-            # Return inside lock to return the correct value,
-            # otherwise an other thread could already have
-            # decremented again.
-            return self.count
-
 peek_context = Context.peek_context
 
 
@@ -98,7 +77,7 @@ class Promise(object):
     #              '_is_waiting', '_future', '_trace', '_event_instance'
     #              )
 
-    _state = States.PENDING  # type: int
+    _state = STATE_PENDING  # type: int
     _is_final = False
     _is_bound = False
     _is_following = False
@@ -118,7 +97,7 @@ class Promise(object):
         """
         Initialize the Promise into a pending state.
         """
-        # self._state = States.PENDING  # type: int
+        # self._state = STATE_PENDING  # type: int
         # self._is_final = False
         # self._is_bound = False
         # self._is_following = False
@@ -182,7 +161,7 @@ class Promise(object):
             self._reject(make_self_resolution_error())
             return
 
-        if promise._state == States.PENDING:
+        if promise._state == STATE_PENDING:
             len = self._length
             if len > 0:
                 promise._migrate_callback0(self)
@@ -192,17 +171,17 @@ class Promise(object):
             self._is_following = True
             self._length = 0
             self._set_followee(promise)
-        elif promise._state == States.FULFILLED:
+        elif promise._state == STATE_FULFILLED:
             self._fulfill(promise._value())
-        elif promise._state == States.REJECTED:
+        elif promise._state == STATE_REJECTED:
             self._reject(promise._reason())
 
     def _settled_value(self, _raise=False):
         assert not self._is_following
 
-        if self._state == States.FULFILLED:
+        if self._state == STATE_FULFILLED:
             return self._rejection_handler0
-        elif self._state == States.REJECTED:
+        elif self._state == STATE_REJECTED:
             if _raise:
                 raise self._fulfillment_handler0
             return self._fulfillment_handler0
@@ -212,7 +191,7 @@ class Promise(object):
             err = make_self_resolution_error()
             # self._attach_extratrace(err)
             return self._reject(err)
-        self._state = States.FULFILLED
+        self._state = STATE_FULFILLED
         self._rejection_handler0 = value
         self._event().set()
 
@@ -223,7 +202,7 @@ class Promise(object):
                 async_instance.settle_promises(self)
 
     def _reject(self, reason):
-        self._state = States.REJECTED
+        self._state = STATE_REJECTED
         self._fulfillment_handler0 = reason
         self._event().set()
 
@@ -289,7 +268,7 @@ class Promise(object):
         elif is_promise:
             if async_guaranteed:
                 promise._is_async_guaranteed = True
-            if self._state == States.FULFILLED:
+            if self._state == STATE_FULFILLED:
                 promise._fulfill(value)
             else:
                 promise._reject(value)
@@ -399,7 +378,7 @@ class Promise(object):
     def _settle_promises(self):
         length = self._length
         if length > 0:
-            if self._state == States.REJECTED:
+            if self._state == STATE_REJECTED:
                 reason = self._fulfillment_handler0
                 self._settle_promise0(self._rejection_handler0, reason)
                 self._reject_promises(length, reason)
@@ -482,14 +461,14 @@ class Promise(object):
                 self._target()
             )
         state = self._state
-        if state == States.PENDING:
+        if state == STATE_PENDING:
             return "<Promise at {} pending>".format(hex_id)
-        elif state == States.FULFILLED:
+        elif state == STATE_FULFILLED:
             return "<Promise at {} fulfilled with {}>".format(
                 hex_id,
                 repr(self._rejection_handler0)
             )
-        elif state == States.REJECTED:
+        elif state == STATE_REJECTED:
             return "<Promise at {} rejected with {}>".format(
                 hex_id,
                 repr(self._fulfillment_handler0)
@@ -499,19 +478,19 @@ class Promise(object):
     def is_pending(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise is still pending. Could be wrong the moment the function returns."""
-        return self._target()._state == States.PENDING
+        return self._target()._state == STATE_PENDING
 
     @property
     def is_fulfilled(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been fulfilled. Could be wrong the moment the function returns."""
-        return self._target()._state == States.FULFILLED
+        return self._target()._state == STATE_FULFILLED
 
     @property
     def is_rejected(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
-        return self._target()._state == States.REJECTED
+        return self._target()._state == STATE_REJECTED
 
     def catch(self, on_rejection):
         # type: (Promise, Union[Callable, partial]) -> Promise
@@ -526,13 +505,13 @@ class Promise(object):
         target = self._target()
 
         state = target._state
-        if state == States.PENDING:
+        if state == STATE_PENDING:
             target._add_callbacks(did_fulfill, did_reject, promise)
         else:
-            if state == States.FULFILLED:
+            if state == STATE_FULFILLED:
                 value = target._rejection_handler0
                 handler = did_fulfill
-            elif state == States.REJECTED:
+            elif state == STATE_REJECTED:
                 value = target._fulfillment_handler0
                 handler = did_reject
                 # target._rejection_is_unhandled = False
@@ -689,7 +668,7 @@ class Promise(object):
         if not isinstance(ret, cls):
             ret = cls()
             # ret._capture_stacktrace()
-            ret._state = States.FULFILLED
+            ret._state = STATE_FULFILLED
             ret._rejection_handler0 = obj
 
         return ret
