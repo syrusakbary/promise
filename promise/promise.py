@@ -619,7 +619,7 @@ class Promise(object):
             # Python type, or if is already a Promise
             return obj
 
-        add_done_callback = get_add_done_callback(obj)  # type: Optional[Callable]
+        add_done_callback = getattr(obj, "add_done_callback", None)  # type: Optional[Callable]
         if add_done_callback and callable(add_done_callback):
             def executor(resolve, reject):
                 if obj.done():
@@ -631,13 +631,13 @@ class Promise(object):
             promise._future = obj
             return promise
 
-        done = get_done(obj)  # type: Optional[Callable]
+        done = getattr(obj, "done", None)  # type: Optional[Callable]
         if done and callable(done):
             def executor(resolve, reject):
                 done(resolve, reject)
             return cls(executor)
 
-        then = get_then(obj)  # type: Optional[Callable]
+        then = getattr(obj, "then", None)  # type: Optional[Callable]
         if then and callable(then):
             def executor(resolve, reject):
                 then(resolve, reject)
@@ -650,7 +650,7 @@ class Promise(object):
 
     @classmethod
     def reject(cls, reason):
-        ret = Promise()
+        ret = cls()
         # ret._capture_stacktrace();
         # ret._rejectCallback(reason, true);
         ret._reject_callback(reason, True)
@@ -707,9 +707,19 @@ class Promise(object):
 
         return cls.all(m.values()).then(handle_success)
 
+    @classmethod
+    def is_thenable(cls, obj):
+        # type: (Any) -> bool
+        """
+        A utility function to determine if the specified
+        object is a promise using "duck typing".
+        """
+        return isinstance(cls._try_convert_to_promise(obj), cls)
+
 
 promisify = Promise.promisify
 promise_for_dict = Promise.for_dict
+is_thenable = Promise.is_thenable
 
 
 def _process_future_result(resolve, reject):
@@ -720,32 +730,3 @@ def _process_future_result(resolve, reject):
         else:
             resolve(future.result())
     return handle_future_result
-
-
-def get_add_done_callback(obj):
-    # type: (Any) -> Callable
-    return getattr(obj, "add_done_callback", None)
-
-
-def get_done(obj):
-    # type: (Any) -> Callable
-    return getattr(obj, "done", None)
-
-
-def get_then(obj):
-    # type: (Any) -> Callable
-    return getattr(obj, "then", None)
-
-
-def is_thenable(obj):
-    # type: (Any) -> bool
-    """
-    A utility function to determine if the specified
-    object is a promise using "duck typing".
-    """
-    return isinstance(Promise._try_convert_to_promise(obj), Promise)
-    # return isinstance(obj, Promise) or \
-    #     callable(get_add_done_callback(obj)) or \
-    #     callable(get_done(obj)) or \
-    #     callable(get_then(obj)) or \
-    #     iscoroutine(obj)
