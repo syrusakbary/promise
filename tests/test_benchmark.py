@@ -1,6 +1,6 @@
 from pytest import raises
 import time
-from promise import Promise, promisify
+from promise import Promise, promisify, is_thenable
 
 
 def test_benchmark_promise_creation(benchmark):
@@ -15,6 +15,27 @@ def test_benchmark_promise_resolve(benchmark):
 
     result = benchmark(create_promise).get()
     assert result == True
+
+
+def test_benchmark_is_thenable_basic_type(benchmark):
+    def create_promise():
+        return is_thenable(True)
+
+    result = benchmark(create_promise)
+    assert result == False
+
+
+def test_benchmark_is_thenable_custom_type(benchmark):
+    class MyType(object):
+        pass
+
+    my_type_instance = MyType()
+
+    def create_promise():
+        return is_thenable(my_type_instance)
+
+    result = benchmark(create_promise)
+    assert result == False
 
 
 def test_benchmark_promise_creation_with_resolve(benchmark):
