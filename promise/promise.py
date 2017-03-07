@@ -1,3 +1,5 @@
+from types import NoneType, BooleanType, IntType, LongType, FloatType, ComplexType, StringType, UnicodeType, TupleType, ListType, DictType
+
 from collections import namedtuple
 from functools import partial
 from sys import version_info
@@ -26,15 +28,26 @@ CALLBACK_REJECT_OFFSET = 1
 CALLBACK_PROMISE_OFFSET = 2
 
 
+BASE_TYPES = (
+    NoneType,
+    BooleanType,
+    IntType,
+    LongType,
+    FloatType,
+    ComplexType,
+    StringType,
+    UnicodeType,
+    TupleType,
+    ListType,
+    DictType
+)
+
+
 class States(object):
     # These are the potential states of a promise
     PENDING = -1
     REJECTED = 0
     FULFILLED = 1
-
-
-def internal_executor(resolve, reject):
-    pass
 
 
 def make_self_resolution_error():
@@ -74,6 +87,8 @@ class CountdownLatch(object):
             # decremented again.
             return self.count
 
+peek_context = Context.peek_context
+
 
 class Promise(object):
     """
@@ -82,32 +97,47 @@ class Promise(object):
     http://promises-aplus.github.io/promises-spec/
     """
 
-    __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
-                 '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
-                 '_is_waiting', '_future', '_trace', '_event_instance'
-                 )
+    # __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
+    #              '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
+    #              '_is_waiting', '_future', '_trace', '_event_instance'
+    #              )
+
+    _state = States.PENDING  # type: int
+    _is_final = False
+    _is_bound = False
+    _is_following = False
+    _is_async_guaranteed = False
+    _length = 0
+    _handlers = None  # type: Dict[int, Union[Callable, None]]
+    _fulfillment_handler0 = None  # type: Union[Callable, partial]
+    _rejection_handler0 = None  # type: Union[Callable, partial]
+    _promise0 = None  # type: Promise
+    _future = None  # type: Future
+    _event_instance = None # type: Event
+    # _trace = None
+    _is_waiting = False
 
     def __init__(self, executor=None):
         # type: (Promise, Union[Callable, partial]) -> None
         """
         Initialize the Promise into a pending state.
         """
-        self._state = States.PENDING  # type: int
-        self._is_final = False
-        self._is_bound = False
-        self._is_following = False
-        self._is_async_guaranteed = False
-        self._length = 0
-        self._handlers = {}  # type: Dict[int, Union[Callable, None]]
-        self._fulfillment_handler0 = None  # type: Union[Callable, partial]
-        self._rejection_handler0 = None  # type: Union[Callable, partial]
-        self._promise0 = None  # type: Promise
-        self._future = None  # type: Future
-        self._event_instance = None # type: Event
-        self._trace = Context.peek_context()
+        # self._state = States.PENDING  # type: int
+        # self._is_final = False
+        # self._is_bound = False
+        # self._is_following = False
+        # self._is_async_guaranteed = False
+        # self._length = 0
+        # self._handlers = None  # type: Dict[int, Union[Callable, None]]
+        # self._fulfillment_handler0 = None  # type: Union[Callable, partial]
+        # self._rejection_handler0 = None  # type: Union[Callable, partial]
+        # self._promise0 = None  # type: Promise
+        # self._future = None  # type: Future
+        # self._event_instance = None # type: Event
+        self._trace = peek_context()
 
-        self._is_waiting = False
-        if executor is not None and executor != internal_executor:
+        # self._is_waiting = False
+        if executor is not None:
             self._resolve_from_executor(executor)
 
         # For compatibility reasons
@@ -317,6 +347,10 @@ class Promise(object):
 
     def _add_callbacks(self, fulfill, reject, promise):
         assert not self._is_following
+
+        if self._handlers is None:
+            self._handlers = {}
+
         index = self._length
         if index > MAX_LENGTH - CALLBACK_SIZE:
             index = 0
@@ -446,6 +480,11 @@ class Promise(object):
 
     def __repr__(self):
         hex_id = hex(id(self))
+        if self._is_following:
+            return "<Promise at {} following {}>".format(
+                hex_id,
+                self._target()
+            )
         state = self._state
         if state == States.PENDING:
             return "<Promise at {} pending>".format(hex_id)
@@ -487,7 +526,7 @@ class Promise(object):
         return self.then(None, on_rejection)
 
     def _then(self, did_fulfill=None, did_reject=None):
-        promise = self.__class__(internal_executor)
+        promise = self.__class__()
         target = self._target()
 
         state = target._state
@@ -603,10 +642,13 @@ class Promise(object):
 
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
+        if type(obj) in BASE_TYPES:
+            return obj
+
         if isinstance(obj, cls):
             return obj
 
-        add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
+        add_done_callback = get_add_done_callback(obj)  # type: Optional[Callable]
         if add_done_callback and callable(add_done_callback):
             def executor(resolve, reject):
                 if obj.done():
@@ -618,13 +660,13 @@ class Promise(object):
             promise._future = obj
             return promise
 
-        done = getattr(obj, "done", None)  # type: Optional[Callable]
+        done = get_done(obj)  # type: Optional[Callable]
         if done and callable(done):
             def executor(resolve, reject):
                 done(resolve, reject)
             return cls(executor)
 
-        then = getattr(obj, "then", None)  # type: Optional[Callable]
+        then = get_then(obj)  # type: Optional[Callable]
         if then and callable(then):
             def executor(resolve, reject):
                 then(resolve, reject)
@@ -637,7 +679,7 @@ class Promise(object):
 
     @classmethod
     def reject(cls, reason):
-        ret = Promise(internal_executor)
+        ret = Promise()
         # ret._capture_stacktrace();
         # ret._rejectCallback(reason, true);
         ret._reject_callback(reason, True)
@@ -650,11 +692,10 @@ class Promise(object):
         # type: (Any) -> Promise
         ret = cls._try_convert_to_promise(obj)
         if not isinstance(ret, cls):
-            ret = cls(internal_executor)
+            ret = cls()
             # ret._capture_stacktrace()
             ret._state = States.FULFILLED
             ret._rejection_handler0 = obj
-            ret._event().set()
 
         return ret
 
@@ -710,14 +751,19 @@ def _process_future_result(resolve, reject):
     return handle_future_result
 
 
-def is_future(obj):
-    # type: (Any) -> bool
-    return callable(get_done_callback(obj))
-
-
-def get_done_callback(obj):
+def get_add_done_callback(obj):
     # type: (Any) -> Callable
     return getattr(obj, "add_done_callback", None)
+
+
+def get_done(obj):
+    # type: (Any) -> Callable
+    return getattr(obj, "done", None)
+
+
+def get_then(obj):
+    # type: (Any) -> Callable
+    return getattr(obj, "then", None)
 
 
 def is_thenable(obj):
@@ -726,7 +772,9 @@ def is_thenable(obj):
     A utility function to determine if the specified
     object is a promise using "duck typing".
     """
-    return isinstance(obj, Promise) or is_future(obj) or (
-        hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
-            hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
-                iscoroutine(obj))
+    return isinstance(Promise._try_convert_to_promise(obj), Promise)
+    # return isinstance(obj, Promise) or \
+    #     callable(get_add_done_callback(obj)) or \
+    #     callable(get_done(obj)) or \
+    #     callable(get_then(obj)) or \
+    #     iscoroutine(obj)
