@@ -11,7 +11,7 @@ from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: no
 from .async_ import Async
 from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)
-from .utils import deprecated
+from .utils import deprecated, integer_types, string_types, text_type, binary_type
 from .context import Context
 from .promise_list import PromiseList
 
@@ -27,19 +27,16 @@ CALLBACK_FULFILL_OFFSET = 0
 CALLBACK_REJECT_OFFSET = 1
 CALLBACK_PROMISE_OFFSET = 2
 
-
-BASE_TYPES = (
+BASE_TYPES = integer_types + string_types + (
     NoneType,
     BooleanType,
-    IntType,
-    LongType,
     FloatType,
     ComplexType,
-    StringType,
-    UnicodeType,
     TupleType,
     ListType,
-    DictType
+    DictType,
+    text_type,
+    binary_type,
 )
 
 
@@ -93,8 +90,7 @@ peek_context = Context.peek_context
 class Promise(object):
     """
     This is the Promise class that complies
-    Promises/A+ specification and test suite:
-    http://promises-aplus.github.io/promises-spec/
+    Promises/A+ specification.
     """
 
     # __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
@@ -642,10 +638,9 @@ class Promise(object):
 
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
-        if type(obj) in BASE_TYPES:
-            return obj
-
-        if isinstance(obj, cls):
+        if type(obj) in BASE_TYPES or isinstance(obj, cls):
+            # We skip all the slow checks if is a native
+            # Python type, or if is already a Promise
             return obj
 
         add_done_callback = get_add_done_callback(obj)  # type: Optional[Callable]
