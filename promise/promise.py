@@ -1,5 +1,3 @@
-from types import NoneType, BooleanType, IntType, LongType, FloatType, ComplexType, StringType, UnicodeType, TupleType, ListType, DictType
-
 from collections import namedtuple
 from functools import partial
 from sys import version_info
@@ -27,17 +25,16 @@ CALLBACK_FULFILL_OFFSET = 0
 CALLBACK_REJECT_OFFSET = 1
 CALLBACK_PROMISE_OFFSET = 2
 
-BASE_TYPES = integer_types + string_types + (
-    NoneType,
-    BooleanType,
-    FloatType,
-    ComplexType,
-    TupleType,
-    ListType,
-    DictType,
+BASE_TYPES = set(integer_types + string_types + (
+    bool,
+    float,
+    complex,
+    tuple,
+    list,
+    dict,
     text_type,
     binary_type,
-)
+))
 
 # These are the potential states of a promise
 STATE_PENDING = -1
@@ -617,7 +614,7 @@ class Promise(object):
 
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
-        if type(obj) in BASE_TYPES or isinstance(obj, cls):
+        if obj is None or type(obj) in BASE_TYPES or isinstance(obj, cls):
             # We skip all the slow checks if is a native
             # Python type, or if is already a Promise
             return obj
