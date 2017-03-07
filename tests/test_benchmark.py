@@ -9,6 +9,14 @@ def test_benchmark_promise_creation(benchmark):
         p = Promise()
 
 
+def test_benchmark_promise_resolve(benchmark):
+    def create_promise():
+        return Promise.resolve(True)
+
+    result = benchmark(create_promise).get()
+    assert result == True
+
+
 def test_benchmark_promise_creation_with_resolve(benchmark):
     do_resolve = lambda resolve, reject: resolve(True)
 
