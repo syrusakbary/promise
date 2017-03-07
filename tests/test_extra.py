@@ -586,3 +586,57 @@ def test_promise_repr_rejected():
     promise = Promise.rejected(err)
     promise._wait()
     assert repr(promise) == "<Promise at {} rejected with {}>".format(hex(id(promise)), repr(err))
+
+
+def test_promise_loop():
+    def by_two(result):
+        return result*2
+
+    def executor(resolve, reject):
+        resolve(Promise.resolve(1).then(lambda v: Promise.resolve(v).then(by_two)))
+
+    p = Promise(executor)
+    assert p.get(.1) == 2
+
+
+def test_promisify_without_done(promisify):
+    class CustomThenable(object):
+        def add_done_callback(f):
+            f(True)
+
+    instance = CustomThenable()
+
+    promise = promisify(instance)
+    assert promise.get() == instance
+
+
+def test_promisify_future_like(promisify):
+    class CustomThenable(object):
+        def add_done_callback(self, f):
+            f(True)
+
+        def done(self):
+            return True
+
+        def exception(self):
+            pass
+
+        def result(self):
+            return True
+
+    instance = CustomThenable()
+
+    promise = promisify(instance)
+    assert promise.get() == True
+
+
+# def test_promise_loop():
+#     values = Promise.resolve([1, None, 2])
+#     def on_error(error):
+#         error
+
+#     def executor(resolve, reject):
+#         resolve(Promise.resolve(values).then(lambda values: Promise.all([Promise.resolve(values[0])]).catch(on_error)))
+
+#     p = Promise(executor)
+#     assert p.get(.1) == 2

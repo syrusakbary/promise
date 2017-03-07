@@ -405,7 +405,7 @@ class Promise(object):
             error = e
             # print traceback.format_exc()
 
-            synchronous = False
+        synchronous = False
         # self._pop_context()
 
         if error is not None:
@@ -620,7 +620,8 @@ class Promise(object):
             return obj
 
         add_done_callback = getattr(obj, "add_done_callback", None)  # type: Optional[Callable]
-        if add_done_callback and callable(add_done_callback):
+        done = getattr(obj, "done", None)  # type: Optional[Callable]
+        if add_done_callback and callable(add_done_callback) and done:
             def executor(resolve, reject):
                 if obj.done():
                     _process_future_result(resolve, reject)(obj)
@@ -631,7 +632,6 @@ class Promise(object):
             promise._future = obj
             return promise
 
-        done = getattr(obj, "done", None)  # type: Optional[Callable]
         if done and callable(done):
             def executor(resolve, reject):
                 done(resolve, reject)

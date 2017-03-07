@@ -88,6 +88,7 @@ def test_benchmark_promisify_custom(benchmark):
     result = benchmark(create_promise)
 
     assert isinstance(result, Promise)
+    assert result.get() == instance
 
 
 def test_benchmark_promise_all(benchmark):
@@ -98,6 +99,7 @@ def test_benchmark_promise_all(benchmark):
     result = benchmark(create_promise)
 
     assert isinstance(result, Promise)
+    assert result.get() == range(1000)
 
 
 def test_benchmark_promise_all_promise(benchmark):
@@ -108,3 +110,4 @@ def test_benchmark_promise_all_promise(benchmark):
     result = benchmark(create_promise)
 
     assert isinstance(result, Promise)
+    assert result.get() == range(1000)
