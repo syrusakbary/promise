@@ -616,7 +616,7 @@ class Promise(object):
 
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
-        _type = type(obj)
+        _type = obj.__class__
         if obj is None or _type in BASE_TYPES or issubclass(_type, cls):
             # We skip all the slow checks if is a native
             # Python type, or if is already a Promise
@@ -625,7 +625,7 @@ class Promise(object):
         if iscoroutine(obj):
             obj = ensure_future(obj)
 
-        if type_has_add_done_callback(_type):
+        if is_future_like(_type):
             def executor(resolve, reject):
                 if obj.done():
                     _process_future_result(resolve, reject)(obj)
@@ -635,8 +635,8 @@ class Promise(object):
             promise = cls(executor)
             promise._future = obj
             return promise
-
-        if type_has_then(_type):
+        
+        if is_promise_like(_type):
             return cls(obj.then)
 
         return obj
@@ -707,20 +707,24 @@ class Promise(object):
         A utility function to determine if the specified
         object is a promise using "duck typing".
         """
-        return isinstance(cls._try_convert_to_promise(obj), cls)
+        _type = obj.__class__
+        return issubclass(_type, cls) or \
+            iscoroutine(obj) or \
+            is_future_like(_type) or \
+            is_promise_like(_type)
 
 
 _type_done_callbacks = {}
-def type_has_add_done_callback(_type):
+def is_future_like(_type):
     if _type not in _type_done_callbacks:
-        _type_done_callbacks[_type] = hasattr(_type, 'add_done_callback')
+        _type_done_callbacks[_type] = callable(getattr(_type, 'add_done_callback', None))
     return _type_done_callbacks[_type]
 
 
 _type_then_callbacks = {}
-def type_has_then(_type):
+def is_promise_like(_type):
     if _type not in _type_then_callbacks:
-        _type_then_callbacks[_type] = hasattr(_type, 'then')
+        _type_then_callbacks[_type] = callable(getattr(_type, 'then', None))
     return _type_then_callbacks[_type]
 
 

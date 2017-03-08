@@ -48,15 +48,6 @@ class FakeThenPromise():
             raise Exception("FakeThenPromise raises in 'then'")
 
 
-class FakeDonePromise():
-    def __init__(self, raises=True):
-        self.raises = raises
-
-    def done(self, s=None, f=None):
-        if self.raises:
-            raise Exception("FakeDonePromise raises in 'done'")
-
-
 def df(value, dtime):
     p = Promise()
     t = DelayedFulfill(dtime, p, value)
@@ -475,11 +466,6 @@ def test_is_thenable_then_object():
     assert is_thenable(promise)
 
 
-def test_is_thenable_done_object():
-    promise = FakeDonePromise()
-    assert is_thenable(promise)
-
-
 def test_is_thenable_future():
     promise = Future()
     assert is_thenable(promise)
@@ -510,19 +496,6 @@ def test_promisify_then_object_exception(promisify):
     with raises(Exception) as excinfo:
         promisify(promise).get()
     assert str(excinfo.value) == "FakeThenPromise raises in 'then'"
-
-
-def test_promisify_done_object(promisify):
-    promise = FakeDonePromise(raises=False)
-    p = promisify(promise)
-    assert isinstance(p, Promise)
-
-
-def test_promisify_done_object_exception(promisify):
-    promise = FakeDonePromise()
-    with raises(Exception) as excinfo:
-        promisify(promise).get()
-    assert str(excinfo.value) == "FakeDonePromise raises in 'done'"
 
 
 def test_promisify_future(promisify):
@@ -599,15 +572,15 @@ def test_promise_loop():
     assert p.get(.1) == 2
 
 
-def test_promisify_without_done(promisify):
+def test_promisify_promise_like(promisify):
     class CustomThenable(object):
-        def add_done_callback(f):
-            f(True)
+        def then(self, resolve, reject):
+            resolve(True)
 
     instance = CustomThenable()
 
     promise = promisify(instance)
-    assert promise.get() == instance
+    assert promise.get() == True
 
 
 def test_promisify_future_like(promisify):
