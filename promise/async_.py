@@ -10,16 +10,16 @@ class Scheduler(object):
 
     def call(self, fn):
         # thread = Thread(target=fn)
-        # thread = Timer(0.001, fn)
+        # thread = Timer(0.01, fn)
         # fn = thread.start
-        try:
+        # try:
             # c = Context.peek_context()
             # if not c:
-            fn()
+        fn()
             # else:
             #     c.on_exit(fn)
-        except:
-            pass
+        # except:
+        #     pass
         # thread = Thread(target=fn)
         # thread = Timer(0.001, fn)
         # thread.start()
@@ -41,7 +41,7 @@ class Async(object):
         self.late_queue = Queue(LATE_QUEUE_CAPACITY)
         self.normal_queue = Queue(NORMAL_QUEUE_CAPACITY)
         self.have_drained_queues = False
-        self.trampoline_enabled = True
+        self.trampoline_enabled = False
         self.schedule = schedule or get_default_scheduler()
 
     def enable_trampoline(self):
