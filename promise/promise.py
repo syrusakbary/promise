@@ -55,6 +55,7 @@ def try_catch(handler, *args, **kwargs):
     try:
         return handler(*args, **kwargs)
     except Exception as e:
+        # import traceback
         _error_obj['e'] = e
         # print traceback.format_exc()
         return _error_obj
@@ -402,6 +403,7 @@ class Promise(object):
         try:
             executor(resolve, reject)
         except Exception as e:
+            # import traceback
             error = e
             # print traceback.format_exc()
 
@@ -614,37 +616,28 @@ class Promise(object):
 
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
-        if obj is None or type(obj) in BASE_TYPES or isinstance(obj, cls):
+        _type = type(obj)
+        if obj is None or _type in BASE_TYPES or issubclass(_type, cls):
             # We skip all the slow checks if is a native
             # Python type, or if is already a Promise
             return obj
 
-        add_done_callback = getattr(obj, "add_done_callback", None)  # type: Optional[Callable]
-        done = getattr(obj, "done", None)  # type: Optional[Callable]
-        if add_done_callback and callable(add_done_callback) and done:
+        if iscoroutine(obj):
+            obj = ensure_future(obj)
+
+        if type_has_add_done_callback(_type):
             def executor(resolve, reject):
                 if obj.done():
                     _process_future_result(resolve, reject)(obj)
                 else:
-                    add_done_callback(_process_future_result(resolve, reject))
+                    obj.add_done_callback(_process_future_result(resolve, reject))
                 # _process_future_result(resolve, reject)(obj)
             promise = cls(executor)
             promise._future = obj
             return promise
 
-        if done and callable(done):
-            def executor(resolve, reject):
-                done(resolve, reject)
-            return cls(executor)
-
-        then = getattr(obj, "then", None)  # type: Optional[Callable]
-        if then and callable(then):
-            def executor(resolve, reject):
-                then(resolve, reject)
-            return cls(executor)
-
-        if iscoroutine(obj):
-            return cls._try_convert_to_promise(ensure_future(obj), context)
+        if type_has_then(_type):
+            return cls(obj.then)
 
         return obj
 
@@ -715,6 +708,20 @@ class Promise(object):
         object is a promise using "duck typing".
         """
         return isinstance(cls._try_convert_to_promise(obj), cls)
+
+
+_type_done_callbacks = {}
+def type_has_add_done_callback(_type):
+    if _type not in _type_done_callbacks:
+        _type_done_callbacks[_type] = hasattr(_type, 'add_done_callback')
+    return _type_done_callbacks[_type]
+
+
+_type_then_callbacks = {}
+def type_has_then(_type):
+    if _type not in _type_then_callbacks:
+        _type_then_callbacks[_type] = hasattr(_type, 'then')
+    return _type_then_callbacks[_type]
 
 
 promisify = Promise.promisify

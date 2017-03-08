@@ -75,10 +75,11 @@ def test_benchmark_promise_creation_with_reject(benchmark):
 #     assert isinstance(result, Promise)
 
 
-def test_benchmark_promisify_custom(benchmark):
+def test_benchmark_promisify_custom_type(benchmark):
     class CustomThenable(object):
-        def add_done_callback(*args, **kwargs):
-            pass
+        pass
+        # def then(self, resolve, reject):
+        #     return resolve(True)
 
     instance = CustomThenable()
 
