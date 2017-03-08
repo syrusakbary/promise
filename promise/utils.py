@@ -34,6 +34,7 @@ class deprecated(object):
 
         return new_func
 
+
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
