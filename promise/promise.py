@@ -150,11 +150,10 @@ class Promise(object):
         if value is self:
             return self._reject_callback(make_self_resolution_error(), False)
 
-        maybe_promise = self._try_convert_to_promise(value, self)
-        if not isinstance(maybe_promise, Promise):
+        if not self.is_thenable(value):
             return self._fulfill(value)
 
-        promise = maybe_promise._target()
+        promise = self._try_convert_to_promise(value, self)._target()
         if promise == self:
             self._reject(make_self_resolution_error())
             return
@@ -617,9 +616,7 @@ class Promise(object):
     @classmethod
     def _try_convert_to_promise(cls, obj, context=None):
         _type = obj.__class__
-        if obj is None or _type in BASE_TYPES or issubclass(_type, cls):
-            # We skip all the slow checks if is a native
-            # Python type, or if is already a Promise
+        if issubclass(_type, cls):
             return obj
 
         if iscoroutine(obj):
@@ -654,14 +651,14 @@ class Promise(object):
     @classmethod
     def resolve(cls, obj):
         # type: (Any) -> Promise
-        ret = cls._try_convert_to_promise(obj)
-        if not isinstance(ret, cls):
+        if not cls.is_thenable(obj):
             ret = cls()
             # ret._capture_stacktrace()
             ret._state = STATE_FULFILLED
             ret._rejection_handler0 = obj
+            return ret
 
-        return ret
+        return cls._try_convert_to_promise(obj)
 
     cast = resolve
     promisify = cast
@@ -708,6 +705,9 @@ class Promise(object):
         object is a promise using "duck typing".
         """
         _type = obj.__class__
+        if obj is None or _type in BASE_TYPES:
+            return False
+
         return issubclass(_type, cls) or \
             iscoroutine(obj) or \
             is_future_like(_type) or \

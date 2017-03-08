@@ -23,9 +23,9 @@ class PromiseList(object):
 
     def _init(self):
         Promise = self._promise_class
-        values = Promise._try_convert_to_promise(self._values, self.promise)
-        if isinstance(values, Promise):
-            values = values._target()
+        values = self._values
+        if Promise.is_thenable(values):
+            values = Promise._try_convert_to_promise(self._values, self.promise)._target()
             if values.is_fulfilled:
                 values = values._value()
             elif values.is_rejected:
@@ -58,9 +58,8 @@ class PromiseList(object):
         result = self.promise
 
         for i, val in enumerate(values):
-            maybe_promise = Promise._try_convert_to_promise(val, self.promise)
-            if isinstance(maybe_promise, Promise):
-                maybe_promise = maybe_promise._target()
+            if Promise.is_thenable(val):
+                maybe_promise = Promise._try_convert_to_promise(val, self.promise)._target()
                 # if is_resolved:
                 #     # maybe_promise.suppressUnhandledRejections
                 #     pass
@@ -76,8 +75,8 @@ class PromiseList(object):
                 elif maybe_promise.is_rejected:
                     is_resolved = self._promise_rejected(maybe_promise._reason())
 
-            elif not is_resolved:
-                is_resolved = self._promise_fulfilled(maybe_promise, i)
+            else:
+                is_resolved = self._promise_fulfilled(val, i)
 
             if is_resolved:
                 break
