@@ -12,14 +12,14 @@ class Scheduler(object):
         # thread = Thread(target=fn)
         # thread = Timer(0.01, fn)
         # fn = thread.start
-        # try:
+        try:
             # c = Context.peek_context()
             # if not c:
-        fn()
+            fn()
             # else:
             #     c.on_exit(fn)
-        # except:
-        #     pass
+        except:
+            pass
         # thread = Thread(target=fn)
         # thread = Timer(0.001, fn)
         # thread.start()
