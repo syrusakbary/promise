@@ -1,6 +1,6 @@
 from pytest import raises
 import time
-from promise import Promise, promisify
+from promise import Promise, promisify, is_thenable
 
 
 def test_benchmark_promise_creation(benchmark):
@@ -9,12 +9,41 @@ def test_benchmark_promise_creation(benchmark):
         p = Promise()
 
 
+def test_benchmark_promise_resolve(benchmark):
+    def create_promise():
+        return Promise.resolve(True)
+
+    result = benchmark(create_promise).get()
+    assert result == True
+
+
+def test_benchmark_is_thenable_basic_type(benchmark):
+    def create_promise():
+        return is_thenable(True)
+
+    result = benchmark(create_promise)
+    assert result == False
+
+
+def test_benchmark_is_thenable_custom_type(benchmark):
+    class MyType(object):
+        pass
+
+    my_type_instance = MyType()
+
+    def create_promise():
+        return is_thenable(my_type_instance)
+
+    result = benchmark(create_promise)
+    assert result == False
+
+
 def test_benchmark_promise_creation_with_resolve(benchmark):
     do_resolve = lambda resolve, reject: resolve(True)
 
     def create_promise():  # unnecessary function call
         p = Promise(do_resolve)
-        p.wait()
+        # p._wait()
         return p
 
     result = benchmark(create_promise).get()
@@ -26,7 +55,7 @@ def test_benchmark_promise_creation_with_reject(benchmark):
 
     def create_promise():  # unnecessary function call
         p = Promise(do_resolve)
-        p.wait()
+        # p._wait()
         return p
 
     with raises(Exception) as exc_info:
@@ -46,16 +75,40 @@ def test_benchmark_promise_creation_with_reject(benchmark):
 #     assert isinstance(result, Promise)
 
 
-def test_benchmark_promisify_custom(benchmark):
+def test_benchmark_promisify_custom_type(benchmark):
     class CustomThenable(object):
-        def add_done_callback(*args, **kwargs):
-            pass
+        pass
+        # def then(self, resolve, reject):
+        #     return resolve(True)
 
     instance = CustomThenable()
 
     def create_promise():  # unnecessary function call
-        return promisify(instance)
+        return Promise.resolve(instance)
 
     result = benchmark(create_promise)
 
     assert isinstance(result, Promise)
+    assert result.get() == instance
+
+
+def test_benchmark_promise_all(benchmark):
+    values = range(1000)
+    def create_promise():  # unnecessary function call
+        return Promise.all(values)
+
+    result = benchmark(create_promise)
+
+    assert isinstance(result, Promise)
+    assert result.get() == list(range(1000))
+
+
+def test_benchmark_promise_all_promise(benchmark):
+    values = [Promise.resolve(i) for i in range(1000)]
+    def create_promise():  # unnecessary function call
+        return Promise.all(values)
+
+    result = benchmark(create_promise)
+
+    assert isinstance(result, Promise)
+    assert result.get() == list(range(1000))
