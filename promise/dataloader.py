@@ -221,7 +221,14 @@ def dispatch_queue_batch(loader, queue):
     keys = [l.key for l in queue]
 
     # Call the provided batch_load_fn for this loader with the loader queue's keys.
-    batch_promise = loader.batch_load_fn(keys)
+    try:
+        batch_promise = loader.batch_load_fn(keys)
+    except Exception, e:
+        return failed_dispatch(
+            loader,
+            queue,
+            Exception("Data loader batch_load_fn function raised an Exception: {}".format(repr(e)))
+        )
 
     # Assert the expected response from batch_load_fn
     if not batch_promise or not isinstance(batch_promise, Promise):
