@@ -41,7 +41,7 @@ class Async(object):
         self.late_queue = Queue(LATE_QUEUE_CAPACITY)
         self.normal_queue = Queue(NORMAL_QUEUE_CAPACITY)
         self.have_drained_queues = False
-        self.trampoline_enabled = False
+        self.trampoline_enabled = True
         self.schedule = schedule or get_default_scheduler()
 
     def enable_trampoline(self):

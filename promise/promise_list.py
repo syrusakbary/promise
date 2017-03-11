@@ -64,12 +64,12 @@ class PromiseList(object):
                 #     # maybe_promise.suppressUnhandledRejections
                 #     pass
                 if maybe_promise.is_pending:
-                    self._values[i] = maybe_promise
                     maybe_promise._add_callbacks(
                         partial(self._promise_fulfilled, i=i),
                         self._promise_rejected,
                         None
                     )
+                    self._values[i] = maybe_promise
                 elif maybe_promise.is_fulfilled:
                     is_resolved = self._promise_fulfilled(maybe_promise._value(), i)
                 elif maybe_promise.is_rejected:
@@ -85,6 +85,8 @@ class PromiseList(object):
             result._is_async_guaranteed = True
 
     def _promise_fulfilled(self, value, i):
+        if self.is_resolved:
+            return
         # assert not self.is_resolved
         # assert isinstance(self._values, Iterable)
         # assert isinstance(i, int)
@@ -96,6 +98,8 @@ class PromiseList(object):
         return False
 
     def _promise_rejected(self, reason):
+        if self.is_resolved:
+            return
         # assert not self.is_resolved
         # assert isinstance(self._values, Iterable)
         self._total_resolved += 1
