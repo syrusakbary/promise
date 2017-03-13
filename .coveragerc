@@ -1,2 +1,2 @@
 [run]
-omit = promise/compat.py,promise/iterate_promise.py
+omit = promise/compat.py,promise/iterate_promise.py,promise/utils.py

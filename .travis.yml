@@ -5,6 +5,21 @@ python:
 - 3.3
 - 3.4
 - 3.5
+- pypy
+before_install:
+- |
+  if [ "$TRAVIS_PYTHON_VERSION" = "pypy" ]; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    if [ -f "$PYENV_ROOT/bin/pyenv" ]; then
+      cd "$PYENV_ROOT" && git pull
+    else
+      rm -rf "$PYENV_ROOT" && git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
+    fi
+    export PYPY_VERSION="4.0.1"
+    "$PYENV_ROOT/bin/pyenv" install "pypy-$PYPY_VERSION"
+    virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
+    source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
+  fi
 cache: pip
 install:
 - pip install -e .[test]
@@ -20,5 +35,5 @@ matrix:
     script: flake8
   - python: '3.5'
     script: |
-      pip install mypy-lang
-      mypy promise/  --check-untyped-defs
+      pip install mypy
+      mypy promise/  --check-untyped-defs  --ignore-missing-imports

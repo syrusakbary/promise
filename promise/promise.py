@@ -1,327 +1,535 @@
+from collections import namedtuple
 from functools import partial
-from threading import Event, RLock
 from sys import version_info
-from .compat import Future, iscoroutine, ensure_future, iterate_promise  # type: ignore
+from threading import Event, RLock
 
-from typing import Callable, Optional, Iterator, Any, Dict  # flake8: noqa
+from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
+                    Union)
+
+from .async_ import Async
+from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
+                     iterate_promise)
+from .utils import deprecated, integer_types, string_types, text_type, binary_type
+from .context import Context
+from .promise_list import PromiseList
+
+async_instance = Async()
+
+IS_PYTHON2 = version_info[0] == 2
+DEFAULT_TIMEOUT = None  # type: float
+
+MAX_LENGTH = 0xFFFF | 0
+CALLBACK_SIZE = 3
+
+CALLBACK_FULFILL_OFFSET = 0
+CALLBACK_REJECT_OFFSET = 1
+CALLBACK_PROMISE_OFFSET = 2
+
+BASE_TYPES = set(integer_types + string_types + (
+    bool,
+    float,
+    complex,
+    tuple,
+    list,
+    dict,
+    text_type,
+    binary_type,
+))
+
+# These are the potential states of a promise
+STATE_PENDING = -1
+STATE_REJECTED = 0
+STATE_FULFILLED = 1
 
 
-class States(object):
-    # These are the potential states of a promise
-    PENDING = -1
-    REJECTED = 0
-    FULFILLED = 1
+def make_self_resolution_error():
+    return TypeError("Promise is self")
 
 
-class CountdownLatch(object):
-    __slots__ = ('_lock', 'count')
+_error_obj = {
+    'e': None
+} # type: Dict[str, Union[None, Exception]]
 
-    def __init__(self, count):
-        # type: (CountdownLatch, int) -> None
-        assert count >= 0, "count needs to be greater or equals to 0. Got: %s" % count
-        self._lock = RLock()
-        self.count = count
 
-    def dec(self):
-        # type: (CountdownLatch) -> int
-        with self._lock:
-            assert self.count > 0, "count needs to be greater or equals to 0. Got: %s" % self.count
-            self.count -= 1
-            # Return inside lock to return the correct value,
-            # otherwise an other thread could already have
-            # decremented again.
-            return self.count
+def try_catch(handler, *args, **kwargs):
+    try:
+        return handler(*args, **kwargs)
+    except Exception as e:
+        # import traceback
+        _error_obj['e'] = e
+        # print traceback.format_exc()
+        return _error_obj
+
+
+peek_context = Context.peek_context
 
 
 class Promise(object):
     """
     This is the Promise class that complies
-    Promises/A+ specification and test suite:
-    http://promises-aplus.github.io/promises-spec/
+    Promises/A+ specification.
     """
 
-    __slots__ = ('_state', '_value', 'reason', '_cb_lock', '_callbacks',
-                 '_errbacks', '_event', '_future')
+    # __slots__ = ('_state', '_is_final', '_is_bound', '_is_following', '_is_async_guaranteed',
+    #              '_length', '_handlers', '_fulfillment_handler0', '_rejection_handler0', '_promise0',
+    #              '_is_waiting', '_future', '_trace', '_event_instance'
+    #              )
 
-    def __init__(self, fn=None):
-        # type: (Promise, Callable) -> None
+    _state = STATE_PENDING  # type: int
+    _is_final = False
+    _is_bound = False
+    _is_following = False
+    _is_async_guaranteed = False
+    _length = 0
+    _handlers = None  # type: Dict[int, Union[Callable, None]]
+    _fulfillment_handler0 = None  # type: Union[Callable, partial]
+    _rejection_handler0 = None  # type: Union[Callable, partial]
+    _promise0 = None  # type: Promise
+    _future = None  # type: Future
+    _event_instance = None # type: Event
+    # _trace = None
+    _is_waiting = False
+
+    def __init__(self, executor=None):
+        # type: (Promise, Union[Callable, partial]) -> None
         """
         Initialize the Promise into a pending state.
         """
-        self._state = States.PENDING  # type: int
-        self._value = None  # type: Any
-        self.reason = None  # type: Optional[Exception]
-        self._cb_lock = RLock()
-        self._callbacks = []  # type: List[Callable]
-        self._errbacks = []  # type: List[Callable]
-        self._event = Event()
-        self._future = None  # type: Optional[Future]
-        if fn:
-            self.do_resolve(fn)
+        # self._state = STATE_PENDING  # type: int
+        # self._is_final = False
+        # self._is_bound = False
+        # self._is_following = False
+        # self._is_async_guaranteed = False
+        # self._length = 0
+        # self._handlers = None  # type: Dict[int, Union[Callable, None]]
+        # self._fulfillment_handler0 = None  # type: Union[Callable, partial]
+        # self._rejection_handler0 = None  # type: Union[Callable, partial]
+        # self._promise0 = None  # type: Promise
+        # self._future = None  # type: Future
+        # self._event_instance = None # type: Event
+        self._trace = peek_context()
 
-    def __iter__(self):
-        # type: (Promise) -> Iterator
-        return iterate_promise(self)
+        # self._is_waiting = False
+        if executor is not None:
+            self._resolve_from_executor(executor)
 
-    __await__ = __iter__
-
-    def __repr__(self):
-        hex_id = hex(id(self))
-        if self._state == States.PENDING:
-            return "<Promise at {} pending>".format(hex_id)
-        elif self._state == States.FULFILLED:
-            return "<Promise at {} fulfilled with {}>".format(
-                hex_id,
-                repr(self._value)
-            )
-        elif self._state == States.REJECTED:
-            return "<Promise at {} rejected with {}>".format(
-                hex_id,
-                repr(self.reason)
-            )
+        # For compatibility reasons
+        # self.reject = self._deprecated_reject
+        # self.resolve = self._deprecated_resolve
 
     @property
     def future(self):
         # type: (Promise) -> Future
         if not self._future:
             self._future = Future()
-            self.add_callback(self._future.set_result)
-            self.add_errback(self._future.set_exception)
+            self._then(self._future.set_result, self._future.set_exception)
         return self._future
 
-    def do_resolve(self, fn):
-        try:
-            fn(self.fulfill, self.reject)
-        except Exception as e:
-            self.reject(e)
+    def __iter__(self):
+        return iterate_promise(self)
 
-    @classmethod
-    def fulfilled(cls, x):
-        # type: (Any) -> Promise
-        p = cls()
-        p.fulfill(x)
-        return p
+    __await__ = __iter__
 
-    @classmethod
-    def rejected(cls, reason):
-        # type: (Any) -> Promise
-        p = cls()
-        p.reject(reason)
-        return p
+    @deprecated(
+        "Rejecting directly in a Promise instance is deprecated, as Promise.reject() is now a class method. "
+        "Please use promise.do_reject() instead.",
+        name='reject'
+    )
+    def _deprecated_reject(self, e):
+        self.do_reject(e)
 
-    def fulfill(self, x):
-        # type: (Promise, Any) -> None
-        """
-        Fulfill the promise with a given value.
-        """
+    @deprecated(
+        "Resolving directly in a Promise instance is deprecated, as Promise.resolve() is now a class method. "
+        "Please use promise.do_resolve() instead.",
+        name='resolve'
+    )
+    def _deprecated_resolve(self, value):
+        self.do_resolve(value)
 
-        if self is x:
-            raise TypeError("Cannot resolve promise with itself.")
-        elif is_thenable(x):
-            try:
-                self.promisify(x).done(self.fulfill, self.reject)
-            except Exception as e:
-                self.reject(e)
-        else:
-            self._fulfill(x)
+    def _resolve_callback(self, value):
+        if value is self:
+            return self._reject_callback(make_self_resolution_error(), False)
 
-    resolve = fulfilled
+        if not self.is_thenable(value):
+            return self._fulfill(value)
+
+        promise = self._try_convert_to_promise(value, self)._target()
+        if promise == self:
+            self._reject(make_self_resolution_error())
+            return
+
+        if promise._state == STATE_PENDING:
+            len = self._length
+            if len > 0:
+                promise._migrate_callback0(self)
+            for i in range(1, len):
+                promise._migrate_callback_at(self, i)
+
+            self._is_following = True
+            self._length = 0
+            self._set_followee(promise)
+        elif promise._state == STATE_FULFILLED:
+            self._fulfill(promise._value())
+        elif promise._state == STATE_REJECTED:
+            self._reject(promise._reason())
+
+    def _settled_value(self, _raise=False):
+        assert not self._is_following
+
+        if self._state == STATE_FULFILLED:
+            return self._rejection_handler0
+        elif self._state == STATE_REJECTED:
+            if _raise:
+                raise self._fulfillment_handler0
+            return self._fulfillment_handler0
 
     def _fulfill(self, value):
-        # type: (Promise, Any) -> None
-        with self._cb_lock:
-            if self._state != States.PENDING:
-                return
+        if value is self:
+            err = make_self_resolution_error()
+            # self._attach_extratrace(err)
+            return self._reject(err)
+        self._state = STATE_FULFILLED
+        self._rejection_handler0 = value
+        self._event().set()
 
-            self._value = value
-            self._state = States.FULFILLED
+        if self._length > 0:
+            if self._is_async_guaranteed:
+                self._settle_promises()
+            else:
+                async_instance.settle_promises(self)
 
-            callbacks = self._callbacks
-            # We will never call these callbacks again, so allow
-            # them to be garbage collected.  This is important since
-            # they probably include closures which are binding variables
-            # that might otherwise be garbage collected.
-            #
-            # Prevent future appending
-            self._callbacks = None
+    def _reject(self, reason):
+        self._state = STATE_REJECTED
+        self._fulfillment_handler0 = reason
+        self._event().set()
 
-            # Notify all waiting
-            self._event.set()
+        if self._is_final:
+            assert self._length == 0
+            return async_instance.fatal_error(reason)
 
-        for callback in callbacks:
-            try:
-                callback(value)
-            except Exception:
-                # Ignore errors in callbacks
-                pass
+        if self._length > 0:
+            async_instance.settle_promises(self)
+        else:
+            self._ensure_possible_rejection_handled()
 
-    def reject(self, reason):
-        # type: (Promise, Exception) -> None
-        """
-        Reject this promise for a given reason.
-        """
-        assert isinstance(reason, Exception), (
-            "The reject function needs to be called with an Exception. "
-            "Got {}".format(reason))
+        if self._is_async_guaranteed:
+            self._settle_promises()
+        else:
+            async_instance.settle_promises(self)
 
-        with self._cb_lock:
-            if self._state != States.PENDING:
-                return
+    def _ensure_possible_rejection_handled(self):
+        # self._rejection_is_unhandled = True
+        # async_instance.invoke_later(self._notify_unhandled_rejection, self)
+        pass
 
-            self.reason = reason
-            self._state = States.REJECTED
+    def _reject_callback(self, reason, synchronous=False):
+        assert isinstance(reason, Exception), "A promise was rejected with a non-error: {}".format(reason)
+        # trace = ensure_error_object(reason)
+        # has_stack = trace is reason
+        # self._attach_extratrace(trace, synchronous and has_stack)
+        self._reject(reason)
 
-            errbacks = self._errbacks
-            # We will never call these errbacks again, so allow
-            # them to be garbage collected.  This is important since
-            # they probably include closures which are binding variables
-            # that might otherwise be garbage collected.
-            #
-            # Prevent future appending
-            self._errbacks = None
+    def _clear_callback_data_index_at(self, index):
+        assert not self._is_following
+        assert index > 0
+        base = index * CALLBACK_SIZE - CALLBACK_SIZE
+        self._handlers[base + CALLBACK_PROMISE_OFFSET] = None
+        self._handlers[base + CALLBACK_FULFILL_OFFSET] = None
+        self._handlers[base + CALLBACK_REJECT_OFFSET] = None
 
-            # Notify all waiting
-            self._event.set()
+    def _fulfill_promises(self, length, value):
+        for i in range(1, length):
+            handler = self._fulfillment_handler_at(i)
+            promise = self._promise_at(i)
+            self._clear_callback_data_index_at(i)
+            self._settle_promise(promise, handler, value)
 
-        for errback in errbacks:
-            try:
-                errback(reason)
-            except Exception:
-                # Ignore errors in errback
-                pass
+    def _reject_promises(self, length, reason):
+        for i in range(1, length):
+            handler = self._rejection_handler_at(i)
+            promise = self._promise_at(i)
+            self._clear_callback_data_index_at(i)
+            self._settle_promise(promise, handler, reason)
+
+    def _settle_promise(self, promise, handler, value):
+        assert not self._is_following
+        is_promise = isinstance(promise, self.__class__)
+        async_guaranteed = self._is_async_guaranteed
+        if callable(handler):
+            if not is_promise:
+                handler(value)  # , promise
+            else:
+                if async_guaranteed:
+                    promise._is_async_guaranteed = True
+                self._settle_promise_from_handler(handler, value, promise)
+        elif is_promise:
+            if async_guaranteed:
+                promise._is_async_guaranteed = True
+            if self._state == STATE_FULFILLED:
+                promise._fulfill(value)
+            else:
+                promise._reject(value)
+
+    def _settle_promise0(self, handler, value):
+        promise = self._promise0
+        self._promise0 = None
+        self._settle_promise(promise, handler, value)
+
+    def _settle_promise_from_handler(self, handler, value, promise):
+        # promise._push_context()
+        # with Context():
+        x = try_catch(handler, value)  # , promise
+        # promise_created = promise._pop_context()
+
+        if x == _error_obj:
+            promise._reject_callback(x['e'], False)
+        # if isinstance(x, PromiseError):
+        #     promise._reject_callback(x.e, False)
+        else:
+            promise._resolve_callback(x)
+
+    def _promise_at(self, index):
+        assert index > 0
+        assert not self._is_following
+        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_PROMISE_OFFSET]
+
+    def _fulfillment_handler_at(self, index):
+        assert not self._is_following
+        assert index > 0
+        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_FULFILL_OFFSET]
+
+    def _rejection_handler_at(self, index):
+        assert not self._is_following
+        assert index > 0
+        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_REJECT_OFFSET]
+
+    def _migrate_callback0(self, follower):
+        self._add_callbacks(
+            follower._fulfillment_handler0,
+            follower._rejection_handler0,
+            follower._promise0,
+        )
+
+    def _migrate_callback_at(self, follower, index):
+        self._add_callbacks(
+            follower._fulfillment_handler_at(index),
+            follower._rejection_handler_at(index),
+            follower._promise_at(index),
+        )
+
+    def _add_callbacks(self, fulfill, reject, promise):
+        assert not self._is_following
+
+        if self._handlers is None:
+            self._handlers = {}
+
+        index = self._length
+        if index > MAX_LENGTH - CALLBACK_SIZE:
+            index = 0
+            self._length = 0
+
+        if index == 0:
+            assert not self._promise0
+            assert not self._fulfillment_handler0
+            assert not self._rejection_handler0
+
+            self._promise0 = promise
+            if callable(fulfill):
+                self._fulfillment_handler0 = fulfill
+            if callable(reject):
+                self._rejection_handler0 = reject
+
+        else:
+            base = index * CALLBACK_SIZE - CALLBACK_SIZE
+
+            assert (base + CALLBACK_PROMISE_OFFSET) not in self._handlers
+            assert (base + CALLBACK_FULFILL_OFFSET) not in self._handlers
+            assert (base + CALLBACK_REJECT_OFFSET) not in self._handlers
+
+            self._handlers[base + CALLBACK_PROMISE_OFFSET] = promise
+            if callable(fulfill):
+                self._handlers[base + CALLBACK_FULFILL_OFFSET] = fulfill
+            if callable(reject):
+                self._handlers[base + CALLBACK_REJECT_OFFSET] = reject
+
+        self._length = index + 1
+        return index
+
+    def _target(self):
+        ret = self
+        while (ret._is_following):
+            ret = ret._followee()
+        return ret
+
+    def _followee(self):
+        assert self._is_following
+        assert isinstance(self._rejection_handler0, Promise)
+        return self._rejection_handler0
+
+    def _set_followee(self, promise):
+        assert self._is_following
+        assert not isinstance(self._rejection_handler0, Promise)
+        self._event_instance = promise._event_instance
+        self._rejection_handler0 = promise
+
+    def _settle_promises(self):
+        length = self._length
+        if length > 0:
+            if self._state == STATE_REJECTED:
+                reason = self._fulfillment_handler0
+                self._settle_promise0(self._rejection_handler0, reason)
+                self._reject_promises(length, reason)
+            else:
+                value = self._rejection_handler0
+                self._settle_promise0(self._fulfillment_handler0, value)
+                self._fulfill_promises(length, value)
+
+            self._length = 0
+
+    def _resolve_from_executor(self, executor):
+        # self._capture_stacktrace()
+        # self._push_context()
+        # with Context():
+        synchronous = True
+
+        def resolve(value):
+            self._resolve_callback(value)
+
+        def reject(reason):
+            self._reject_callback(reason, synchronous)
+
+        error = None
+        try:
+            executor(resolve, reject)
+        except Exception as e:
+            # import traceback
+            error = e
+            # print traceback.format_exc()
+
+        synchronous = False
+        # self._pop_context()
+
+        if error is not None:
+            self._reject_callback(error, True)
+
+    def _event(self):
+        if not self._event_instance:
+            self._event_instance = Event()
+        return self._event_instance
+
+    def _wait(self, timeout=None):
+        if not self.is_pending:
+            # We return if the promise is already
+            # fulfilled or rejected
+            return
+
+        target = self._target()
+        if target._trace:
+            # If we wait, we drain the queue of the
+            # callbacks waiting on the context exit
+            # so we avoid a blocking state
+            target._trace.drain_queue()
+
+        if timeout is None and IS_PYTHON2:
+            timeout = float("Inf")
+
+        waited = target._event().wait(timeout)
+        if not waited:
+            raise Exception("Timeout")
+
+    def get(self, wait=True, timeout=None):
+        target = self._target()
+        if wait or timeout:
+            self._wait(timeout or DEFAULT_TIMEOUT)
+
+        return self._target_settled_value(_raise=True)
+
+
+    def _target_settled_value(self, _raise=False):
+        return self._target()._settled_value(_raise)
+
+    _value = _reason = _target_settled_value
+    value = reason = property(_target_settled_value)
+
+    def __repr__(self):
+        hex_id = hex(id(self))
+        if self._is_following:
+            return "<Promise at {} following {}>".format(
+                hex_id,
+                self._target()
+            )
+        state = self._state
+        if state == STATE_PENDING:
+            return "<Promise at {} pending>".format(hex_id)
+        elif state == STATE_FULFILLED:
+            return "<Promise at {} fulfilled with {}>".format(
+                hex_id,
+                repr(self._rejection_handler0)
+            )
+        elif state == STATE_REJECTED:
+            return "<Promise at {} rejected with {}>".format(
+                hex_id,
+                repr(self._fulfillment_handler0)
+            )
 
     @property
     def is_pending(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise is still pending. Could be wrong the moment the function returns."""
-        return self._state == States.PENDING
+        return self._target()._state == STATE_PENDING
 
     @property
     def is_fulfilled(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been fulfilled. Could be wrong the moment the function returns."""
-        return self._state == States.FULFILLED
+        return self._target()._state == STATE_FULFILLED
 
     @property
     def is_rejected(self):
         # type: (Promise) -> bool
         """Indicate whether the Promise has been rejected. Could be wrong the moment the function returns."""
-        return self._state == States.REJECTED
-
-    def get(self, timeout=None):
-        # type: (Promise, float) -> Any
-        """Get the value of the promise, waiting if necessary."""
-        if timeout is None and version_info[0] == 2:
-            self.wait(float("Inf"))
-        else:
-            self.wait(timeout)
-
-        if self._state == States.PENDING:
-            raise ValueError("Value not available, promise is still pending")
-        elif self._state == States.FULFILLED:
-            return self._value
-        raise self.reason
-
-    def wait(self, timeout=None):
-        # type: (Promise, float) -> None
-        """
-        An implementation of the wait method which doesn't involve
-        polling but instead utilizes a "real" synchronization
-        scheme.
-        """
-        self._event.wait(timeout)
-
-    def add_callback(self, f):
-        # type: (Promise, Callable) -> None
-        """
-        Add a callback for when this promis is fulfilled.  Note that
-        if you intend to use the value of the promise somehow in
-        the callback, it is more convenient to use the 'then' method.
-        """
-        assert callable(
-            f
-        ), "A function needs to be passed into add_callback. Got: {}".format(f)
-
-        with self._cb_lock:
-            if self._state == States.PENDING:
-                self._callbacks.append(f)
-                return
-
-        # This is a correct performance optimization in case of concurrency.
-        # State can never change once it is not PENDING anymore and is thus safe to read
-        # without acquiring the lock.
-        if self._state == States.FULFILLED:
-            f(self._value)
-
-    def add_errback(self, f):
-        # type: (Promise, Callable) -> None
-        """
-        Add a callback for when this promis is rejected.  Note that
-        if you intend to use the rejection reason of the promise
-        somehow in the callback, it is more convenient to use
-        the 'then' method.
-        """
-        assert callable(
-            f
-        ), "A function needs to be passed into add_errback. Got: {}".format(f)
-
-        with self._cb_lock:
-            if self._state == States.PENDING:
-                self._errbacks.append(f)
-                return
-
-        # This is a correct performance optimization in case of concurrency.
-        # State can never change once it is not PENDING anymore and is thus safe to read
-        # without acquiring the lock.
-        if self._state == States.REJECTED:
-            f(self.reason)
+        return self._target()._state == STATE_REJECTED
 
     def catch(self, on_rejection):
-        # type: (Promise, Callable) -> Promise
+        # type: (Promise, Union[Callable, partial]) -> Promise
         """
         This method returns a Promise and deals with rejected cases only.
         It behaves the same as calling Promise.then(None, on_rejection).
         """
         return self.then(None, on_rejection)
 
-    def done(self, success=None, failure=None):
-        # type: (Promise, Callable, Callable) -> None
-        """
-        This method takes two optional arguments.  The first argument
-        is used if the "self promise" is fulfilled and the other is
-        used if the "self promise" is rejected. In contrast to then,
-        the return value of these callback is ignored and nothing is
-        returned.
-        """
-        with self._cb_lock:
-            if success is not None:
-                self.add_callback(success)
-            if failure is not None:
-                self.add_errback(failure)
+    def _then(self, did_fulfill=None, did_reject=None):
+        promise = self.__class__()
+        target = self._target()
 
-    def done_all(self, handlers=None):
-        # type: (Promise, List[Callable]) -> List[Promise]
-        """
-        :type handlers: list[(Any) -> object] | list[((Any) -> object, (Any) -> object)]
-        """
-        if not handlers:
-            return []
+        state = target._state
+        if state == STATE_PENDING:
+            target._add_callbacks(did_fulfill, did_reject, promise)
+        else:
+            if state == STATE_FULFILLED:
+                value = target._rejection_handler0
+                handler = did_fulfill
+            elif state == STATE_REJECTED:
+                value = target._fulfillment_handler0
+                handler = did_reject
+                # target._rejection_is_unhandled = False
+            async_instance.invoke(
+                partial(target._settle_promise, promise, handler, value),
+                context=target._trace,
+                # target._settle_promise instead?
+                # settler,
+                # target,
+                # Context(handler, promise, value),
+            )
 
-        for handler in handlers:
-            if isinstance(handler, tuple):
-                s, f = handler
+        return promise
 
-                self.done(s, f)
-            elif isinstance(handler, dict):
-                s = handler.get('success')
-                f = handler.get('failure')
+    fulfill = _resolve_callback
+    do_resolve = _resolve_callback
+    do_reject = _reject_callback
 
-                self.done(s, f)
-            else:
-                self.done(success=handler)
-
-    def then(self, success=None, failure=None):
-        # type: (Promise, Callable, Callable) -> Promise
+    def then(self, did_fulfill=None, did_reject=None):
+        # type: (Promise, Union[Callable, partial], Union[Callable, partial]) -> Promise
         """
         This method takes two optional arguments.  The first argument
         is used if the "self promise" is fulfilled and the other is
@@ -348,37 +556,32 @@ class Promise(object):
         :type failure: (Any) -> object
         :rtype : Promise
         """
-        ret = self.__class__()
+        return self._then(did_fulfill, did_reject)
 
-        def call_and_fulfill(v):
-            """
-            A callback to be invoked if the "self promise"
-            is fulfilled.
-            """
-            try:
-                if callable(success):
-                    ret.fulfill(success(v))
-                else:
-                    ret.fulfill(v)
-            except Exception as e:
-                ret.reject(e)
+    def done(self, did_fulfill=None, did_reject=None):
+        promise = self._then(did_fulfill, did_reject)
+        promise._is_final = True
 
-        def call_and_reject(r):
-            """
-            A callback to be invoked if the "self promise"
-            is rejected.
-            """
-            try:
-                if callable(failure):
-                    ret.fulfill(failure(r))
-                else:
-                    ret.reject(r)
-            except Exception as e:
-                ret.reject(e)
+    def done_all(self, handlers=None):
+        # type: (Promise, List[Callable]) -> None
+        """
+        :type handlers: list[(Any) -> object] | list[((Any) -> object, (Any) -> object)]
+        """
+        if not handlers:
+            return
 
-        self.done(call_and_fulfill, call_and_reject)
+        for handler in handlers:
+            if isinstance(handler, tuple):
+                s, f = handler
 
-        return ret
+                self.done(s, f)
+            elif isinstance(handler, dict):
+                s = handler.get('success')
+                f = handler.get('failure')
+
+                self.done(s, f)
+            else:
+                self.done(handler)
 
     def then_all(self, handlers=None):
         # type: (Promise, List[Callable]) -> List[Promise]
@@ -406,74 +609,74 @@ class Promise(object):
 
                 promises.append(self.then(s, f))
             else:
-                promises.append(self.then(success=handler))
+                promises.append(self.then(handler))
 
         return promises
 
     @classmethod
-    def all(cls, values_or_promises):
-        # Type: (Iterable[Promise, Any]) -> Promise
-        """
-        A special function that takes a bunch of promises
-        and turns them into a promise for a vector of values.
-        In other words, this turns an list of promises for values
-        into a promise for a list of values.
-        """
-        _len = len(values_or_promises)
-        if _len == 0:
-            return cls.fulfilled(values_or_promises)
-
-        promises = (
-            cls.promisify(v_or_p)
-            if is_thenable(v_or_p) else cls.resolve(v_or_p)
-            for v_or_p in values_or_promises)  # type: Iterator[Promise]
-
-        all_promise = cls()  # type: Promise
-        counter = CountdownLatch(_len)
-        values = [None] * _len  # type: List[Any]
-
-        def handle_success(original_position):
-            # type: (int) -> Callable
-            def ret(value):
-                values[original_position] = value
-                if counter.dec() == 0:
-                    all_promise.fulfill(values)
-
-            return ret
-
-        for i, p in enumerate(promises):
-            p.done(handle_success(i), all_promise.reject)  # type: ignore
-
-        return all_promise
-
-    @classmethod
-    def promisify(cls, obj):
-        # type: (Any) -> Promise
-        if isinstance(obj, cls):
+    def _try_convert_to_promise(cls, obj, context=None):
+        _type = obj.__class__
+        if issubclass(_type, cls):
             return obj
 
-        add_done_callback = get_done_callback(obj)  # type: Optional[Callable]
-        if callable(add_done_callback):
-            promise = cls()
-            add_done_callback(_process_future_result(promise))
-            return promise
-
-        done = getattr(obj, "done", None)  # type: Optional[Callable]
-        if callable(done):
-            p = cls()
-            done(p.fulfill, p.reject)
-            return p
-
-        then = getattr(obj, "then", None)  # type: Optional[Callable]
-        if callable(then):
-            p = cls()
-            then(p.fulfill, p.reject)
-            return p
-
         if iscoroutine(obj):
-            return cls.promisify(ensure_future(obj))
+            obj = ensure_future(obj)
 
-        raise TypeError("Object is not a Promise like object.")
+        if is_future_like(_type):
+            def executor(resolve, reject):
+                if obj.done():
+                    _process_future_result(resolve, reject)(obj)
+                else:
+                    obj.add_done_callback(_process_future_result(resolve, reject))
+                # _process_future_result(resolve, reject)(obj)
+            promise = cls(executor)
+            promise._future = obj
+            return promise
+        
+        if is_promise_like(_type):
+            return cls(obj.then)
+
+        return obj
+
+    @classmethod
+    def reject(cls, reason):
+        ret = cls()
+        # ret._capture_stacktrace();
+        # ret._rejectCallback(reason, true);
+        ret._reject_callback(reason, True)
+        return ret
+
+    rejected = reject
+
+    @classmethod
+    def resolve(cls, obj):
+        # type: (Any) -> Promise
+        if not cls.is_thenable(obj):
+            ret = cls()
+            # ret._capture_stacktrace()
+            ret._state = STATE_FULFILLED
+            ret._rejection_handler0 = obj
+            return ret
+
+        return cls._try_convert_to_promise(obj)
+
+    cast = resolve
+    promisify = cast
+    fulfilled = cast
+
+    @classmethod
+    def safe(cls, fn):
+        from functools import wraps
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            with Context():
+                return fn(*args, **kwargs)
+
+        return wrapper
+
+    @classmethod
+    def all(cls, promises):
+        return PromiseList(promises, promise_class=cls).promise
 
     @classmethod
     def for_dict(cls, m):
@@ -484,49 +687,57 @@ class Promise(object):
         In other words, this turns an dictionary of promises for values
         into a promise for a dictionary of values.
         """
-        if not m:
-            return cls.fulfilled({})
-
         dict_type = type(m)
+
+        if not m:
+            return cls.resolve(dict_type())
 
         def handle_success(resolved_values):
             return dict_type(zip(m.keys(), resolved_values))
 
         return cls.all(m.values()).then(handle_success)
 
+    @classmethod
+    def is_thenable(cls, obj):
+        # type: (Any) -> bool
+        """
+        A utility function to determine if the specified
+        object is a promise using "duck typing".
+        """
+        _type = obj.__class__
+        if obj is None or _type in BASE_TYPES:
+            return False
+
+        return issubclass(_type, cls) or \
+            iscoroutine(obj) or \
+            is_future_like(_type) or \
+            is_promise_like(_type)
+
+
+_type_done_callbacks = {}  # type: Dict[type, bool]
+def is_future_like(_type):
+    if _type not in _type_done_callbacks:
+        _type_done_callbacks[_type] = callable(getattr(_type, 'add_done_callback', None))
+    return _type_done_callbacks[_type]
+
+
+_type_then_callbacks = {}  # type: Dict[type, bool]
+def is_promise_like(_type):
+    if _type not in _type_then_callbacks:
+        _type_then_callbacks[_type] = callable(getattr(_type, 'then', None))
+    return _type_then_callbacks[_type]
+
 
 promisify = Promise.promisify
 promise_for_dict = Promise.for_dict
+is_thenable = Promise.is_thenable
 
 
-def _process_future_result(promise):
+def _process_future_result(resolve, reject):
     def handle_future_result(future):
         exception = future.exception()
         if exception:
-            promise.reject(exception)
+            reject(exception)
         else:
-            promise.fulfill(future.result())
-
+            resolve(future.result())
     return handle_future_result
-
-
-def is_future(obj):
-    # type: (Any) -> bool
-    return callable(get_done_callback(obj))
-
-
-def get_done_callback(obj):
-    # type: (Any) -> Callable
-    return getattr(obj, "add_done_callback", None)
-
-
-def is_thenable(obj):
-    # type: (Any) -> bool
-    """
-    A utility function to determine if the specified
-    object is a promise using "duck typing".
-    """
-    return isinstance(obj, Promise) or is_future(obj) or (
-        hasattr(obj, "done") and callable(getattr(obj, "done"))) or (
-            hasattr(obj, "then") and callable(getattr(obj, "then"))) or (
-                iscoroutine(obj))

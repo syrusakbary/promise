@@ -1,17 +1,29 @@
 import sys
 from setuptools import setup
 
+if sys.version_info[0] < 3:
+    import __builtin__ as builtins
+else:
+    import builtins
+
+builtins.__SETUP__ = True
+
+version = __import__('promise').get_version()
+
+
 IS_PY3 = sys.hexversion >= 0x03000000
 
 tests_require = [
-    'pytest>=2.7.3', 'pytest-cov', 'coveralls', 'futures', 'pytest-benchmark'
+    'pytest>=2.7.3', 'pytest-cov', 'coveralls', 'futures', 'pytest-benchmark',
+    'mock',
 ]
 if IS_PY3:
     tests_require += ['pytest-asyncio']
 
+
 setup(
     name='promise',
-    version='1.0.1',
+    version=version,
     description='Promises/A+ implementation for Python',
     long_description=open('README.rst').read(),
     url='https://github.com/syrusakbary/promise',

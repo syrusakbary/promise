@@ -3,6 +3,7 @@ try:
 except ImportError:
 
     class Future:  # type: ignore
+
         def __init__(self):
             raise Exception("You need asyncio for using Futures")
 
@@ -18,6 +19,10 @@ except ImportError:
     def iscoroutine(obj):  # type: ignore
         return False
 
+try:
+    from Queue import Queue  # type: ignore # flake8: noqa
+except ImportError:
+    from queue import Queue  # type: ignore # flake8: noqa
 
 try:
     from .iterate_promise import iterate_promise
