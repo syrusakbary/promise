@@ -42,7 +42,8 @@ def get_complete_version(version=None):
     then checks for correctness of the tuple provided.
     """
     if version is None:
-        from promise import VERSION as version
+        from promise import VERSION
+        return VERSION
     else:
         assert len(version) == 5
         assert version[3] in ('alpha', 'beta', 'rc', 'final')
