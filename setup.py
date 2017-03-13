@@ -1,5 +1,5 @@
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 if sys.version_info[0] < 3:
     import __builtin__ as builtins
@@ -45,7 +45,7 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
     keywords='concurrent future deferred promise',
-    packages=["promise"],
+    packages=find_packages(exclude=['tests']),
     extras_require={
         'test': tests_require,
     },
