@@ -39,14 +39,14 @@ PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
 if PY3:
-    string_types = str,
-    integer_types = int,
-    class_types = type,
+    string_types = str,  # type: tuple
+    integer_types = int,  # type: tuple
+    class_types = type,  # type: tuple
     text_type = str
     binary_type = bytes
 else:
-    string_types = basestring,
-    integer_types = (int, long)
-    class_types = (type, types.ClassType)
+    string_types = basestring,  # type: tuple
+    integer_types = (int, long)  # type: tuple
+    class_types = (type, types.ClassType)  # type: tuple
     text_type = unicode
     binary_type = str

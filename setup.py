@@ -9,9 +9,16 @@ tests_require = [
 if IS_PY3:
     tests_require += ['pytest-asyncio']
 
+
+version = __import__('promise').get_version()
+
+if 'test' not in sys.argv:
+    builtins.__SETUP__ = True
+
+
 setup(
     name='promise',
-    version='1.0.1',
+    version=version,
     description='Promises/A+ implementation for Python',
     long_description=open('README.rst').read(),
     url='https://github.com/syrusakbary/promise',

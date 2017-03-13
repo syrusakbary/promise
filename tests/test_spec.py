@@ -4,6 +4,8 @@
 from promise import Promise
 from .utils import assert_exception
 
+from threading import Event
+
 
 class Counter:
     """
@@ -539,7 +541,6 @@ def test_promise_resolved_after():
     """
 
     c = Counter()
-    from threading import Event
     e = Event()
 
     def check(v, c):
@@ -556,8 +557,17 @@ def test_promise_resolved_after():
 
 
 def test_promise_follows_indifentely():
-    promise = Promise.resolve(None).then(Promise.resolve).then(
-        lambda v: Promise.resolve(None).then(lambda v:Promise.resolve('B'))
+    a = Promise.resolve(None)
+    b = a.then(lambda x: Promise.resolve("X"))
+    e = Event()
+    def b_then(v):
+
+        c = Promise.resolve(None)
+        d = c.then(lambda v:Promise.resolve('B'))
+        return d
+
+    promise = b.then(
+        b_then
     )
 
     assert promise.get() == 'B'

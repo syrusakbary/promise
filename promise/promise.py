@@ -16,7 +16,7 @@ from .promise_list import PromiseList
 async_instance = Async()
 
 IS_PYTHON2 = version_info[0] == 2
-DEFAULT_TIMEOUT = 0.5
+DEFAULT_TIMEOUT = None  # type: float
 
 MAX_LENGTH = 0xFFFF | 0
 CALLBACK_SIZE = 3
@@ -714,14 +714,14 @@ class Promise(object):
             is_promise_like(_type)
 
 
-_type_done_callbacks = {}
+_type_done_callbacks = {}  # type: Dict[type, bool]
 def is_future_like(_type):
     if _type not in _type_done_callbacks:
         _type_done_callbacks[_type] = callable(getattr(_type, 'add_done_callback', None))
     return _type_done_callbacks[_type]
 
 
-_type_then_callbacks = {}
+_type_then_callbacks = {}  # type: Dict[type, bool]
 def is_promise_like(_type):
     if _type not in _type_then_callbacks:
         _type_then_callbacks[_type] = callable(getattr(_type, 'then', None))

@@ -223,7 +223,7 @@ def dispatch_queue_batch(loader, queue):
     # Call the provided batch_load_fn for this loader with the loader queue's keys.
     try:
         batch_promise = loader.batch_load_fn(keys)
-    except Exception, e:
+    except Exception as e:
         return failed_dispatch(
             loader,
             queue,
