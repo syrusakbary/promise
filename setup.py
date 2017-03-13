@@ -14,7 +14,8 @@ version = __import__('promise').get_version()
 IS_PY3 = sys.hexversion >= 0x03000000
 
 tests_require = [
-    'pytest>=2.7.3', 'pytest-cov', 'coveralls', 'futures', 'pytest-benchmark'
+    'pytest>=2.7.3', 'pytest-cov', 'coveralls', 'futures', 'pytest-benchmark',
+    'mock',
 ]
 if IS_PY3:
     tests_require += ['pytest-asyncio']
