@@ -6,6 +6,11 @@ if sys.version_info[0] < 3:
 else:
     import builtins
 
+builtins.__SETUP__ = True
+
+version = __import__('promise').get_version()
+
+
 IS_PY3 = sys.hexversion >= 0x03000000
 
 tests_require = [
@@ -13,12 +18,6 @@ tests_require = [
 ]
 if IS_PY3:
     tests_require += ['pytest-asyncio']
-
-
-version = __import__('promise').__version__
-
-if 'test' not in sys.argv:
-    builtins.__SETUP__ = True
 
 
 setup(
