@@ -71,8 +71,8 @@ something that is close to a promise (such as a jQuery attempt at a
 promise) it returns a Promise that takes on the state of ``value``
 (rejected or fulfilled).
 
-Promise.rejected(value)
-^^^^^^^^^^^^^^^^^^^^^^^
+Promise.reject(value)
+^^^^^^^^^^^^^^^^^^^^^
 
 Returns a rejected promise with the given value.
 
@@ -90,12 +90,12 @@ replaced by their fulfilled values. e.g.
 
     assert p.get() is True
 
-Promise.promisify(obj)
-^^^^^^^^^^^^^^^^^^^^^^
+Promise.cast(obj)
+^^^^^^^^^^^^^^^^^
 
 This function wraps the ``obj`` act as a ``Promise`` if possible. Python
 ``Future``\ s are supported, with a callback to ``promise.done`` when
-resolved.
+resolved. Have the same effects as ``Promise.resolve(obj)``.
 
 Promise.for\_dict(d)
 ^^^^^^^^^^^^^^^^^^^^
@@ -105,26 +105,32 @@ into a promise for a dictionary of values. In other words, this turns an
 dictionary of promises for values into a promise for a dictionary of
 values.
 
+Promise.is\_thenable(obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This function checks if the ``obj`` is a ``Promise``, or could be
+``promisify``\ ed.
+
 Instance Methods
 ~~~~~~~~~~~~~~~~
 
 These methods are invoked on a promise instance by calling
 ``myPromise.methodName``
 
-promise.then(on\_fulfilled, on\_rejected)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+promise.then(did\_fulfill, did\_reject)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This method follows the `Promises/A+
 spec <http://promises-aplus.github.io/promises-spec/>`__. It explains
 things very clearly so I recommend you read it.
 
-Either ``on_fulfilled`` or ``on_rejected`` will be called and they will
+Either ``did_fulfill`` or ``did_reject`` will be called and they will
 not be called more than once. They will be passed a single argument and
 will always be called asynchronously (in the next turn of the event
 loop).
 
-If the promise is fulfilled then ``on_fulfilled`` is called. If the
-promise is rejected then ``on_rejected`` is called.
+If the promise is fulfilled then ``did_fulfill`` is called. If the
+promise is rejected then ``did_reject`` is called.
 
 The call to ``.then`` also returns a promise. If the handler that is
 called returns a promise, the promise returned by ``.then`` takes on the
@@ -134,27 +140,39 @@ fulfilled with that value. If the handler that is called throws an
 exception then the promise returned by ``.then`` is rejected with that
 exception.
 
-promise.catch(on\_rejected)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+promise.catch(did\_reject)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sugar for ``promise.then(None, on_rejected)``, to mirror ``catch`` in
+Sugar for ``promise.then(None, did_reject)``, to mirror ``catch`` in
 synchronous code.
 
-promise.done(on\_fulfilled, on\_rejected)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+promise.done(did\_fulfill, did\_reject)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The same semantics as ``.then`` except that it does not return a promise
 and any exceptions are re-thrown so that they can be logged (crashing
 the application in non-browser environments)
 
-Other package functions
------------------------
+Contributing
+============
 
-is\_thenable(obj)
-~~~~~~~~~~~~~~~~~
+After cloning this repo, ensure dependencies are installed by running:
 
-This function checks if the ``obj`` is a ``Promise``, or could be
-``promisify``\ ed.
+.. code:: sh
+
+    pip install -e ".[test]"
+
+After developing, the full test suite can be evaluated by running:
+
+.. code:: sh
+
+    py.test tests --cov=promise --benchmark-skip # Use -v -s for verbose mode
+
+You can also run the benchmarks with:
+
+.. code:: sh
+
+    py.test tests --benchmark-only
 
 Notes
 =====
