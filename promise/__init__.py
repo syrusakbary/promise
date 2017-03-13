@@ -13,6 +13,7 @@ VERSION = (2, 0, 0, 'alpha', 0)
 
 __version__ = get_version(VERSION)
 
+print __version__
 if not __SETUP__:
     from .promise import Promise, promise_for_dict, promisify, is_thenable, async_instance
 
