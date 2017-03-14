@@ -21,22 +21,38 @@ Loader = namedtuple('Loader', 'key,resolve,reject')
 
 class DataLoader(object):
 
-    def __init__(self, batch_load_fn, batch=True, max_batch_size=None, cache=True, cache_key_fn=None, cache_map=None):
+    batch = True
+    max_batch_size = None
+    cache = True
 
-        if not callable(batch_load_fn):
+    def __init__(self, batch_load_fn=None, batch=None, max_batch_size=None, cache=None, get_cache_key=None, cache_map=None):
+
+        if batch_load_fn is not None:
+            self.batch_load_fn = batch_load_fn
+
+        if not callable(self.batch_load_fn):
             raise TypeError((
-                'DataLoader must be constructed with a function which accepts '
+                'DataLoader must be have a batch_load_fn which accepts '
                 'List<key> and returns Promise<List<value>>, but got: {}.'
             ).format(batch_load_fn))
 
-        self.batch_load_fn = batch_load_fn
-        self._batch = batch
-        self._max_batch_size = max_batch_size
-        self._cache = cache
-        self._cache_key_fn = cache_key_fn or identity
-        self._cache_map = cache_map
+        if batch is not None:
+            self.batch = batch
+
+        if max_batch_size is not None:
+            self.max_batch_size = max_batch_size
+
+        if cache is not None:
+            self.cache = cache
+
+        if get_cache_key is not None:
+            self.get_cache_key = get_cache_key
+
         self._promise_cache = cache_map or {}
         self._queue = []  # type: List[Loader]
+
+    def get_cache_key(self, key):
+        return key
 
     def load(self, key=None):
         '''
@@ -48,10 +64,10 @@ class DataLoader(object):
                 'but got: {}.'
             ).format(key))
 
-        cache_key = self._cache_key_fn(key)
+        cache_key = self.get_cache_key(key)
 
         # If caching and there is a cache-hit, return cached Promise.
-        if self._cache:
+        if self.cache:
             cached_promise = self._promise_cache.get(cache_key)
             if cached_promise:
                 return cached_promise
@@ -60,7 +76,7 @@ class DataLoader(object):
         promise = Promise(partial(self.do_resolve_reject, key))
 
         # If caching, cache this promise.
-        if self._cache:
+        if self.cache:
             self._promise_cache[cache_key] = promise
 
         return promise
@@ -79,7 +95,7 @@ class DataLoader(object):
         # A single dispatch should be scheduled per queue at the time when the
         # queue changes from "empty" to "full".
         if len(self._queue) == 1:
-            if self._batch:
+            if self.batch:
                 # If batching, schedule a task to dispatch the queue.
                 enqueue_post_promise_job(partial(dispatch_queue, self))
             else:
@@ -112,7 +128,7 @@ class DataLoader(object):
         Clears the value at `key` from the cache, if it exists. Returns itself for
         method chaining.
         '''
-        cache_key = self._cache_key_fn(key)
+        cache_key = self.get_cache_key(key)
         del self._promise_cache[cache_key]
         return self
 
@@ -130,7 +146,7 @@ class DataLoader(object):
         Adds the provied key and value to the cache. If the key already exists, no
         change is made. Returns itself for method chaining.
         '''
-        cache_key = self._cache_key_fn(key)
+        cache_key = self.get_cache_key(key)
 
         # Only add the key if it does not already exist.
         if cache_key not in self._promise_cache:
@@ -203,7 +219,7 @@ def dispatch_queue(loader):
 
     # If a maxBatchSize was provided and the queue is longer, then segment the
     # queue into multiple batches, otherwise treat the queue as a single batch.
-    max_batch_size = loader._max_batch_size
+    max_batch_size = loader.max_batch_size
 
     if max_batch_size and max_batch_size < len(queue):
         chunks = get_chunks(queue, max_batch_size)

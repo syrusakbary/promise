@@ -120,7 +120,7 @@ class Async(object):
         if not context:
             self.queue_context_tick()
         else:
-            context.on_exit(self.queue_context_tick)
+            (context._parent or context).on_exit(self.queue_context_tick)
 
     def reset(self):
         self.is_tick_used = False

@@ -389,24 +389,24 @@ class Promise(object):
     def _resolve_from_executor(self, executor):
         # self._capture_stacktrace()
         # self._push_context()
-        # with Context():
-        synchronous = True
+        with Context():
+            synchronous = True
 
-        def resolve(value):
-            self._resolve_callback(value)
+            def resolve(value):
+                self._resolve_callback(value)
 
-        def reject(reason):
-            self._reject_callback(reason, synchronous)
+            def reject(reason):
+                self._reject_callback(reason, synchronous)
 
-        error = None
-        try:
-            executor(resolve, reject)
-        except Exception as e:
-            # import traceback
-            error = e
-            # print traceback.format_exc()
+            error = None
+            try:
+                executor(resolve, reject)
+            except Exception as e:
+                # import traceback
+                error = e
+                # print traceback.format_exc()
 
-        synchronous = False
+            synchronous = False
         # self._pop_context()
 
         if error is not None:
