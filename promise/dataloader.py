@@ -18,7 +18,7 @@ Loader = namedtuple('Loader', 'key,resolve,reject')
 class DataLoader(object):
 
     batch = True
-    max_batch_size = None
+    max_batch_size = None  # type: int
     cache = True
 
     def __init__(self, batch_load_fn=None, batch=None, max_batch_size=None, cache=None, get_cache_key=None, cache_map=None):
@@ -47,7 +47,7 @@ class DataLoader(object):
         self._promise_cache = cache_map or {}
         self._queue = []  # type: List[Loader]
 
-    def get_cache_key(self, key):
+    def get_cache_key(self, key):  # type: ignore
         return key
 
     def load(self, key=None):

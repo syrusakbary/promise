@@ -18,11 +18,11 @@ async_instance = Async(SyncScheduler())
 
 
 def get_default_scheduler():
-    return async_instance.scheduler
+    return async_instance.schedule
 
 
 def set_default_scheduler(scheduler):
-    async_instance.scheduler = scheduler
+    async_instance.schedule = scheduler
 
 
 IS_PYTHON2 = version_info[0] == 2
