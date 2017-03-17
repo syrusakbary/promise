@@ -24,7 +24,6 @@ class Context(object):
         return self
 
     def __exit__(self, type, value, traceback):
-        assert not self._exited, "Can't exit a Context twice"
         self._exit()
 
     def _exit(self):
