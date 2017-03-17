@@ -12,8 +12,18 @@ from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
 from .utils import deprecated, integer_types, string_types, text_type, binary_type
 from .context import Context
 from .promise_list import PromiseList
+from .scheduler import SyncScheduler
 
-async_instance = Async()
+async_instance = Async(SyncScheduler())
+
+
+def get_default_scheduler():
+    return async_instance.scheduler
+
+
+def set_default_scheduler(scheduler):
+    async_instance.scheduler = scheduler
+
 
 IS_PYTHON2 = version_info[0] == 2
 DEFAULT_TIMEOUT = None  # type: float

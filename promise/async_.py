@@ -1,32 +1,5 @@
-# from threading import Timer, Thread
-
+# Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
 from .compat import Queue
-# from .context import Context
-
-# Based on https://github.com/petkaantonov/bluebird/blob/master/src/async.js
-
-
-class Scheduler(object):
-
-    def call(self, fn):
-        # thread = Thread(target=fn)
-        # thread = Timer(0.01, fn)
-        # fn = thread.start
-        try:
-            # c = Context.peek_context()
-            # if not c:
-            fn()
-            # else:
-            #     c.on_exit(fn)
-        except:
-            pass
-        # thread = Thread(target=fn)
-        # thread = Timer(0.001, fn)
-        # thread.start()
-
-
-def get_default_scheduler():
-    return Scheduler()
 
 
 # https://docs.python.org/2/library/queue.html#Queue.Queue
@@ -36,13 +9,13 @@ NORMAL_QUEUE_CAPACITY = 0  # The queue size is infinite
 
 class Async(object):
 
-    def __init__(self, schedule=None):
+    def __init__(self, schedule):
         self.is_tick_used = False
         self.late_queue = Queue(LATE_QUEUE_CAPACITY)
         self.normal_queue = Queue(NORMAL_QUEUE_CAPACITY)
         self.have_drained_queues = False
         self.trampoline_enabled = True
-        self.schedule = schedule or get_default_scheduler()
+        self.schedule = schedule
 
     def enable_trampoline(self):
         self.trampoline_enabled = True
