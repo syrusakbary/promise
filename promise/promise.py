@@ -671,8 +671,18 @@ class Promise(object):
         return cls._try_convert_to_promise(obj)
 
     cast = resolve
-    promisify = cast
     fulfilled = cast
+
+    @classmethod
+    def promisify(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            def executor(resolve, reject):
+                return resolve(f(*args, **kwargs))
+
+            return cls(executor)
+
+        return wrapper
 
     @classmethod
     def safe(cls, fn):
