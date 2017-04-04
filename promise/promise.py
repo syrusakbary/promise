@@ -674,7 +674,7 @@ class Promise(object):
     fulfilled = cast
 
     @classmethod
-    def promisify(f):
+    def promisify(cls, f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             def executor(resolve, reject):
