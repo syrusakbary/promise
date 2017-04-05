@@ -13,7 +13,7 @@ def promise_factorial(n):
     def promise_then(r):
         return mul(r, n)
 
-    return Promise.promisify(a).then(promise_then)
+    return Promise.resolve(a).then(promise_then)
 
 
 def test_factorial():

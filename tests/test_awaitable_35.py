@@ -1,6 +1,6 @@
 from asyncio import sleep, Future, wait, FIRST_COMPLETED
 from pytest import mark
-from promise import Promise, promisify, is_thenable
+from promise import Promise, is_thenable
 
 
 @mark.asyncio
@@ -14,7 +14,7 @@ async def test_promisify_coroutine():
         await sleep(.01)
         return True
 
-    assert await promisify(my_coroutine())
+    assert await Promise.resolve(my_coroutine())
 
 
 @mark.asyncio
@@ -30,4 +30,4 @@ async def test_coroutine_is_thenable():
 async def test_promisify_future():
     future = Future()
     future.set_result(True)
-    assert await promisify(future)
+    assert await Promise.resolve(future)

@@ -7,7 +7,7 @@ from threading import Event
 from promise import (
     Promise,
     is_thenable,
-    promisify as free_promisify,
+    promisify,
     promise_for_dict as free_promise_for_dict, )
 from concurrent.futures import Future
 from threading import Thread
@@ -475,61 +475,61 @@ def test_is_thenable_simple_object():
     assert not is_thenable(object())
 
 
-@fixture(params=[free_promisify, Promise.promisify])
-def promisify(request):
+@fixture(params=[Promise.resolve])
+def resolve(request):
     return request.param
 
 
-def test_promisify_promise(promisify):
+def test_resolve_promise(resolve):
     promise = Promise()
-    assert promisify(promise) == promise
+    assert resolve(promise) == promise
 
 
-def test_promisify_then_object(promisify):
+def test_resolve_then_object(resolve):
     promise = FakeThenPromise(raises=False)
-    p = promisify(promise)
+    p = resolve(promise)
     assert isinstance(p, Promise)
 
 
-def test_promisify_then_object_exception(promisify):
+def test_resolve_then_object_exception(resolve):
     promise = FakeThenPromise()
     with raises(Exception) as excinfo:
-        promisify(promise).get()
+        resolve(promise).get()
     assert str(excinfo.value) == "FakeThenPromise raises in 'then'"
 
 
-def test_promisify_future(promisify):
+def test_resolve_future(resolve):
     future = Future()
-    promise = promisify(future)
+    promise = resolve(future)
     assert promise.is_pending
     future.set_result(1)
     assert promise.get() == 1
     assert promise.is_fulfilled
 
 
-def test_promisify_future_rejected(promisify):
+def test_resolve_future_rejected(resolve):
     future = Future()
-    promise = promisify(future)
+    promise = resolve(future)
     assert promise.is_pending
     future.set_exception(Exception('Future rejected'))
     assert promise.is_rejected
     assert_exception(promise.reason, Exception, 'Future rejected')
 
 
-def test_promisify_object(promisify):
+def test_resolve_object(resolve):
     val = object()
-    promised = promisify(val)
+    promised = resolve(val)
     assert isinstance(promised, Promise)
     assert promised.get() == val
 
 
-def test_promisify_promise_subclass():
+def test_resolve_promise_subclass():
     class MyPromise(Promise):
         pass
 
     p = Promise()
     p.do_resolve(10)
-    m_p = MyPromise.promisify(p)
+    m_p = MyPromise.resolve(p)
 
     assert isinstance(m_p, MyPromise)
     assert m_p.get() == p.get()
@@ -572,18 +572,18 @@ def test_promise_loop():
     assert p.get(.1) == 2
 
 
-def test_promisify_promise_like(promisify):
+def test_resolve_promise_like(resolve):
     class CustomThenable(object):
         def then(self, resolve, reject):
             resolve(True)
 
     instance = CustomThenable()
 
-    promise = promisify(instance)
+    promise = resolve(instance)
     assert promise.get() == True
 
 
-def test_promisify_future_like(promisify):
+def test_resolve_future_like(resolve):
     class CustomThenable(object):
         def add_done_callback(self, f):
             f(True)
@@ -599,8 +599,34 @@ def test_promisify_future_like(promisify):
 
     instance = CustomThenable()
 
-    promise = promisify(instance)
+    promise = resolve(instance)
     assert promise.get() == True
+
+
+def sum_function(a, b):
+    return a + b
+
+
+def test_promisify_function_resolved(resolve):
+    promisified_func = promisify(sum_function)
+
+    result = promisified_func(1, 2)
+    assert isinstance(result, Promise)
+    assert result.get() == 3
+
+
+def test_promisify_function_rejected(resolve):
+    promisified_func = promisify(sum_function)
+
+    result = promisified_func(None, None)
+    assert isinstance(result, Promise)
+    with raises(Exception) as exc_info_promise:
+        result.get()
+
+    with raises(Exception) as exc_info:
+        sum_function(None, None)
+
+    assert str(exc_info_promise.value) == str(exc_info.value)
 
 
 # def test_promise_loop():

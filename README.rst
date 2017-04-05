@@ -109,7 +109,13 @@ Promise.is\_thenable(obj)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This function checks if the ``obj`` is a ``Promise``, or could be
-``promisify``\ ed.
+``cast``\ ed.
+
+Promise.promisify(func)
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This function wraps the result of calling ``func`` in a ``Promise``
+instance.
 
 Instance Methods
 ~~~~~~~~~~~~~~~~

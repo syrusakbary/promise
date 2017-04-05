@@ -1,5 +1,5 @@
 from collections import namedtuple
-from functools import partial
+from functools import partial, wraps
 from sys import version_info
 from threading import Event, RLock
 
