@@ -66,7 +66,7 @@ def try_catch(handler, *args, **kwargs):
     try:
         return handler(*args, **kwargs)
     except Exception as e:
-        _, _, tb = exc_info()
+        tb = exc_info()[2]
         if tb is not None and not hasattr(e, '__traceback__'):
             e.__traceback__ = tb
         _error_obj['e'] = e
