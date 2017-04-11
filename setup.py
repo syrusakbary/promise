@@ -50,6 +50,6 @@ setup(
         'test': tests_require,
     },
     install_requires=[
-        'typing',
+        'typing', 'six'
     ],
     tests_require=tests_require, )
