@@ -301,17 +301,17 @@ class Promise(object):
     def _promise_at(self, index):
         assert index > 0
         assert not self._is_following
-        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_PROMISE_OFFSET]
+        return self._handlers.get(index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_PROMISE_OFFSET)
 
     def _fulfillment_handler_at(self, index):
         assert not self._is_following
         assert index > 0
-        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_FULFILL_OFFSET]
+        return self._handlers.get(index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_FULFILL_OFFSET)
 
     def _rejection_handler_at(self, index):
         assert not self._is_following
         assert index > 0
-        return self._handlers[index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_REJECT_OFFSET]
+        return self._handlers.get(index * CALLBACK_SIZE - CALLBACK_SIZE + CALLBACK_REJECT_OFFSET)
 
     def _migrate_callback0(self, follower):
         self._add_callbacks(

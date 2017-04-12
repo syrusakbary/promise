@@ -53,6 +53,20 @@ def test_issue_9_safe():
     assert no_wait == wait_longer
 
 
+def test_issue_26():
+    context = {"success": False}
+    promise1 = Promise(lambda resolve, reject: context.update({"promise1_reject": reject}))
+    promise1.then(lambda x: None)
+    promise1.then(lambda x: None)
+    context["promise1_reject"](RuntimeError("Ooops!"))
+
+    promise2 = Promise(lambda resolve, reject: context.update({"promise2_resolve": resolve}))
+    promise2.then(lambda x: context.update({"success": True}))
+    context["promise2_resolve"](None)
+
+    assert context["success"]
+
+
 # def promise_in_executor(x, wait):
 #     return Promise.promisify(executor.submit(identity, x, wait))
 
