@@ -642,6 +642,12 @@ def test_promises_with_only_then():
     assert promise2.reason == error
     assert promise3.reason == error
 
+
+def test_promises_promisify_still_works_but_deprecated_for_non_callables():
+    x = promisify(1)
+    assert isinstance(x, Promise)
+    assert x.get() == 1
+
 # def test_promise_loop():
 #     values = Promise.resolve([1, None, 2])
 #     def on_error(error):
