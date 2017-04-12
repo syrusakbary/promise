@@ -5,6 +5,12 @@ import warnings
 import sys
 
 
+def warn(msg):
+    warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+    warnings.warn(msg, category=DeprecationWarning, stacklevel=2)
+    warnings.simplefilter('default', DeprecationWarning)  # reset filter
+
+
 class deprecated(object):
 
     def __init__(self, reason, name=None):
@@ -27,9 +33,7 @@ class deprecated(object):
 
         @functools.wraps(cls_or_func)
         def new_func(*args, **kwargs):
-            warnings.simplefilter('always', DeprecationWarning)  # turn off filter
-            warnings.warn(msg, category=DeprecationWarning, stacklevel=2)
-            warnings.simplefilter('default', DeprecationWarning)  # reset filter
+            warn(msg)
             return cls_or_func(*args, **kwargs)
 
         return new_func

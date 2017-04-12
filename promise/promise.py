@@ -9,7 +9,7 @@ from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: no
 from .async_ import Async
 from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)
-from .utils import deprecated, integer_types, string_types, text_type, binary_type
+from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
 from .context import Context
 from .promise_list import PromiseList
 from .scheduler import SyncScheduler
@@ -680,6 +680,10 @@ class Promise(object):
 
     @classmethod
     def promisify(cls, f):
+        if not callable(f):
+            warn("Promise.promisify is now a function decorator, please use Promise.resolve instead.")
+            return cls.resolve(f)
+
         @wraps(f)
         def wrapper(*args, **kwargs):
             def executor(resolve, reject):
