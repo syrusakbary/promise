@@ -61,9 +61,11 @@ def test_issue_26():
     context["promise1_reject"](RuntimeError("Ooops!"))
 
     promise2 = Promise(lambda resolve, reject: context.update({"promise2_resolve": resolve}))
-    promise2.then(lambda x: context.update({"success": True}))
+    promise3 = promise2.then(lambda x: context.update({"success": True}))
     context["promise2_resolve"](None)
 
+    # We wait so it works in asynchronous envs
+    promise3._wait(timeout=.1)
     assert context["success"]
 
 

@@ -637,7 +637,8 @@ def test_promises_with_only_then():
     promise3 = promise1.then(lambda x: None)
     context["promise1_reject"](error)
 
-    promise1._wait()
+    promise2._wait()
+    promise3._wait()
     assert promise2.reason == error
     assert promise3.reason == error
 
