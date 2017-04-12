@@ -629,6 +629,18 @@ def test_promisify_function_rejected(resolve):
     assert str(exc_info_promise.value) == str(exc_info.value)
 
 
+def test_promises_with_only_then():
+    context = {"success": False}
+    error = RuntimeError("Ooops!")
+    promise1 = Promise(lambda resolve, reject: context.update({"promise1_reject": reject}))
+    promise2 = promise1.then(lambda x: None)
+    promise3 = promise1.then(lambda x: None)
+    context["promise1_reject"](error)
+
+    promise1._wait()
+    assert promise2.reason == error
+    assert promise3.reason == error
+
 # def test_promise_loop():
 #     values = Promise.resolve([1, None, 2])
 #     def on_error(error):
