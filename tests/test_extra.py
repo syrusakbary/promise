@@ -104,6 +104,15 @@ def test_exceptions():
         p2.get()
 
 
+def test_thrown_exceptions_have_stacktrace():
+    def throws(v):
+        assert False
+    p3 = Promise.resolve('a').then(throws)
+    with raises(AssertionError) as assert_exc:
+        p3.get()
+    assert assert_exc.traceback[-1].path.strpath == __file__
+
+
 def test_fake_promise():
     p = Promise()
     p.do_resolve(FakeThenPromise())

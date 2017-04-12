@@ -1,8 +1,9 @@
 from collections import namedtuple
 from functools import partial, wraps
-from sys import version_info
+from sys import version_info, exc_info
 from threading import Event, RLock
 
+from six import reraise as raise_
 from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
                     Union)
 
@@ -58,14 +59,16 @@ def make_self_resolution_error():
 
 _error_obj = {
     'e': None
-} # type: Dict[str, Union[None, Exception]]
+}  # type: Dict[str, Union[None, Exception]]
 
 
 def try_catch(handler, *args, **kwargs):
     try:
         return handler(*args, **kwargs)
     except Exception as e:
-        # import traceback
+        tb = exc_info()[2]
+        if tb is not None and not hasattr(e, '__traceback__'):
+            e.__traceback__ = tb
         _error_obj['e'] = e
         # print traceback.format_exc()
         return _error_obj
@@ -190,7 +193,8 @@ class Promise(object):
             return self._rejection_handler0
         elif self._state == STATE_REJECTED:
             if _raise:
-                raise self._fulfillment_handler0
+                raise_val = self._fulfillment_handler0
+                raise_(type(raise_val), raise_val, getattr(raise_val, '__traceback__', None))
             return self._fulfillment_handler0
 
     def _fulfill(self, value):
