@@ -200,7 +200,6 @@ class Promise(object):
             return self._reject(err)
         self._state = STATE_FULFILLED
         self._rejection_handler0 = value
-        self._event().set()
 
         if self._length > 0:
             if self._is_async_guaranteed:
@@ -211,7 +210,6 @@ class Promise(object):
     def _reject(self, reason):
         self._state = STATE_REJECTED
         self._fulfillment_handler0 = reason
-        self._event().set()
 
         if self._is_final:
             assert self._length == 0
@@ -379,7 +377,8 @@ class Promise(object):
     def _set_followee(self, promise):
         assert self._is_following
         assert not isinstance(self._rejection_handler0, Promise)
-        self._event_instance = promise._event_instance
+        if not self._event_instance:
+            self._event_instance = promise._event_instance
         self._rejection_handler0 = promise
 
     def _settle_promises(self):
@@ -434,6 +433,12 @@ class Promise(object):
             return
 
         target = self._target()
+
+        def on_resolve_or_reject(_):
+            target._event().set()
+
+        target._then(on_resolve_or_reject, on_resolve_or_reject)
+
         if target._trace:
             # If we wait, we drain the queue of the
             # callbacks waiting on the context exit
