@@ -2,6 +2,7 @@ from collections import namedtuple
 from functools import partial, wraps
 from sys import version_info, exc_info
 from threading import Event, RLock
+from types import TracebackType
 
 from six import reraise
 from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
@@ -60,7 +61,7 @@ def make_self_resolution_error():
 _error_obj = {
     'e': None,
     't': None
-}  # type: Dict[str, Union[None, Exception]]
+}  # type: Dict[str, Union[None, Exception, TracebackType]]
 
 
 def try_catch(handler, *args, **kwargs):
@@ -99,7 +100,7 @@ class Promise(object):
     _promise0 = None  # type: Promise
     _future = None  # type: Future
     _event_instance = None # type: Event
-    _traceback = None
+    _traceback = None # type: TracebackType
     # _trace = None
     _is_waiting = False
 
