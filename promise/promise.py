@@ -459,11 +459,9 @@ class Promise(object):
         if not waited:
             raise Exception("Timeout")
 
-    def get(self, wait=True, timeout=None):
+    def get(self, timeout=None):
         target = self._target()
-        if wait or timeout:
-            self._wait(timeout or DEFAULT_TIMEOUT)
-
+        self._wait(timeout or DEFAULT_TIMEOUT)
         return self._target_settled_value(_raise=True)
 
 
