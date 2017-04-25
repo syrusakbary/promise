@@ -1,5 +1,6 @@
 from asyncio import sleep, Future, wait, FIRST_COMPLETED
 from pytest import mark
+from promise.context import Context
 from promise import Promise, is_thenable
 
 
@@ -31,3 +32,16 @@ async def test_promisify_future():
     future = Future()
     future.set_result(True)
     assert await Promise.resolve(future)
+
+
+@mark.asyncio
+async def test_await_in_context():
+    async def inner():
+        with Context():
+            promise = Promise.resolve(True).then(lambda x: x)
+            return await promise
+
+    result = await inner()
+    assert result == True
+
+
