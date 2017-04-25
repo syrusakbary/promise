@@ -140,7 +140,12 @@ class Promise(object):
         return self._future
 
     def __iter__(self):
-        return iterate_promise(self)
+        if self._trace:
+            # If we wait, we drain the queue of the
+            # callbacks waiting on the context exit
+            # so we avoid a blocking state
+            self._trace.drain_queue()
+        return iterate_promise(self._target())
 
     __await__ = __iter__
 
@@ -643,6 +648,7 @@ class Promise(object):
 
         if iscoroutine(obj):
             obj = ensure_future(obj)
+            _type = obj.__class__
 
         if is_future_like(_type):
             def executor(resolve, reject):
