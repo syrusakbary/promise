@@ -43,5 +43,3 @@ async def test_await_in_context():
 
     result = await inner()
     assert result == True
-
-
