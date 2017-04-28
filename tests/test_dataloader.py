@@ -1,6 +1,6 @@
 from pytest import raises
 
-from promise import Promise
+from promise import Promise, async_instance
 from promise.dataloader import DataLoader
 
 
@@ -368,3 +368,27 @@ def test_catches_error_if_loader_resolver_fails():
 #     assert a_load_calls == [['A1', 'A2']]
 #     assert b_load_calls == [['B1', 'B2']]
 #     assert deep_load_calls == [[('A1', 'A2'), ('B1', 'B2')]]
+
+@Promise.safe
+def test_dataloader_clear_with_missing_key_works():
+    def do_resolve(x):
+        return x
+
+    a_loader, a_load_calls = id_loader(resolve=do_resolve)
+    assert a_loader.clear('A1') == a_loader
+
+
+def test_wrong_loader_return_type_does_not_block_async_instance():
+    def do_resolve(x):
+        return x
+
+    a_loader, a_load_calls = id_loader(resolve=do_resolve)
+
+    with raises(Exception):
+        a_loader.load('A1').get()
+    assert not async_instance.is_tick_used
+    assert async_instance.have_drained_queues
+    with raises(Exception):
+        a_loader.load('A2').get()
+    assert not async_instance.is_tick_used
+    assert async_instance.have_drained_queues

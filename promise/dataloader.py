@@ -125,7 +125,7 @@ class DataLoader(object):
         method chaining.
         '''
         cache_key = self.get_cache_key(key)
-        del self._promise_cache[cache_key]
+        self._promise_cache.pop(cache_key, None)
         return self
 
     def clear_all(self):
