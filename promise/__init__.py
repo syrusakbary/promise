@@ -24,7 +24,11 @@ if not __SETUP__:
         get_default_scheduler,
         set_default_scheduler
     )
-    from .scheduler import SyncScheduler, ThreadScheduler
+    from .scheduler import SyncScheduler
+    try:
+        from .thread_sheduler import ThreadScheduler
+    except ImportError:
+        ThreadScheduler = None
 
     __all__ = [
         'Promise',
