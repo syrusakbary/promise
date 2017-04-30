@@ -58,20 +58,12 @@ def make_self_resolution_error():
     return TypeError("Promise is self")
 
 
-_error_obj = {
-    'e': None,
-    't': None
-}  # type: Dict[str, Union[None, Exception, TracebackType]]
-
-
 def try_catch(handler, *args, **kwargs):
     try:
-        return handler(*args, **kwargs)
+        return (handler(*args, **kwargs), None)
     except Exception as e:
         tb = exc_info()[2]
-        _error_obj['e'] = e
-        _error_obj['t'] = tb
-        return _error_obj
+        return (None, (e, tb))
 
 
 peek_context = Context.peek_context
@@ -297,15 +289,14 @@ class Promise(object):
     def _settle_promise_from_handler(self, handler, value, promise):
         # promise._push_context()
         # with Context():
-        x = try_catch(handler, value)  # , promise
+        value, error_with_tb = try_catch(handler, value)  # , promise
         # promise_created = promise._pop_context()
 
-        if x == _error_obj:
-            promise._reject_callback(x['e'], False, x['t'])
-        # if isinstance(x, PromiseError):
-        #     promise._reject_callback(x.e, False)
+        if error_with_tb:
+            error, tb = error_with_tb
+            promise._reject_callback(error, False, tb)
         else:
-            promise._resolve_callback(x)
+            promise._resolve_callback(value)
 
     def _promise_at(self, index):
         assert index > 0
