@@ -10,7 +10,7 @@ except NameError:
     __SETUP__ = False
 
 
-VERSION = (2, 0, 0, 'beta', 1)
+VERSION = (2, 0, 2, 'final', 0)
 
 __version__ = get_version(VERSION)
 
@@ -24,7 +24,11 @@ if not __SETUP__:
         get_default_scheduler,
         set_default_scheduler
     )
-    from .scheduler import SyncScheduler, ThreadScheduler
+    from .scheduler import SyncScheduler
+    try:
+        from .thread_sheduler import ThreadScheduler
+    except ImportError:
+        ThreadScheduler = None
 
     __all__ = [
         'Promise',

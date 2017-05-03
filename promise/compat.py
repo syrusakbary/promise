@@ -20,11 +20,6 @@ except ImportError:
         return False
 
 try:
-    from Queue import Queue  # type: ignore # flake8: noqa
-except ImportError:
-    from queue import Queue  # type: ignore # flake8: noqa
-
-try:
     from .iterate_promise import iterate_promise
 except (SyntaxError, ImportError):
 
