@@ -1,6 +1,6 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
 from .compat import Queue
-
+from threading import Thread
 
 # https://docs.python.org/2/library/queue.html#Queue.Queue
 LATE_QUEUE_CAPACITY = 0  # The queue size is infinite
@@ -72,10 +72,10 @@ class Async(object):
         from .promise import Promise
         while not queue.empty():
             fn = queue.get()
-            if (isinstance(fn, Promise)):
+            if isinstance(fn, Promise):
                 fn._settle_promises()
                 continue
-            fn()
+            Thread(target=fn).start()
 
     def drain_queues(self):
         assert self.is_tick_used

@@ -642,9 +642,20 @@ def test_promisify_function_rejected(resolve):
 #     values = Promise.resolve([1, None, 2])
 #     def on_error(error):
 #         error
-
 #     def executor(resolve, reject):
 #         resolve(Promise.resolve(values).then(lambda values: Promise.all([Promise.resolve(values[0])]).catch(on_error)))
-
 #     p = Promise(executor)
 #     assert p.get(.1) == 2
+
+
+def test_get_after_get_in_promise():
+    expected_value = "ok"
+
+    def do(_):
+        def then_fn(y):
+            return y
+        completed_promise_value = Promise.resolve(expected_value).then(then_fn).get()
+        return completed_promise_value
+
+    p = Promise.resolve(None).then(do)
+    assert p.get() == expected_value
