@@ -1,5 +1,6 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
 import collections
+from threading import Thread
 
 
 class Async(object):
@@ -67,10 +68,10 @@ class Async(object):
         from .promise import Promise
         while queue:
             fn = queue.popleft()
-            if (isinstance(fn, Promise)):
+            if isinstance(fn, Promise):
                 fn._settle_promises()
                 continue
-            fn()
+            Thread(target=fn).start()
 
     def drain_queues(self):
         assert self.is_tick_used
