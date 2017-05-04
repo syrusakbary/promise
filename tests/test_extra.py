@@ -107,9 +107,25 @@ def test_exceptions():
 def test_thrown_exceptions_have_stacktrace():
     def throws(v):
         assert False
+
     p3 = Promise.resolve('a').then(throws)
     with raises(AssertionError) as assert_exc:
         p3.get()
+
+    assert assert_exc.traceback[-1].path.strpath == __file__
+
+
+def test_thrown_exceptions_preserve_stacktrace():
+    def throws(v):
+        assert False
+
+    def after_throws(v):
+        pass
+
+    p3 = Promise.resolve('a').then(throws).then(after_throws)
+    with raises(AssertionError) as assert_exc:
+        p3.get()
+
     assert assert_exc.traceback[-1].path.strpath == __file__
 
 
@@ -637,6 +653,25 @@ def test_promisify_function_rejected(resolve):
 
     assert str(exc_info_promise.value) == str(exc_info.value)
 
+
+def test_promises_with_only_then():
+    context = {"success": False}
+    error = RuntimeError("Ooops!")
+    promise1 = Promise(lambda resolve, reject: context.update({"promise1_reject": reject}))
+    promise2 = promise1.then(lambda x: None)
+    promise3 = promise1.then(lambda x: None)
+    context["promise1_reject"](error)
+
+    promise2._wait()
+    promise3._wait()
+    assert promise2.reason == error
+    assert promise3.reason == error
+
+
+def test_promises_promisify_still_works_but_deprecated_for_non_callables():
+    x = promisify(1)
+    assert isinstance(x, Promise)
+    assert x.get() == 1
 
 # def test_promise_loop():
 #     values = Promise.resolve([1, None, 2])

@@ -1,18 +1,14 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
-from .compat import Queue
+import collections
 from threading import Thread
-
-# https://docs.python.org/2/library/queue.html#Queue.Queue
-LATE_QUEUE_CAPACITY = 0  # The queue size is infinite
-NORMAL_QUEUE_CAPACITY = 0  # The queue size is infinite
 
 
 class Async(object):
 
     def __init__(self, schedule):
         self.is_tick_used = False
-        self.late_queue = Queue(LATE_QUEUE_CAPACITY)
-        self.normal_queue = Queue(NORMAL_QUEUE_CAPACITY)
+        self.late_queue = collections.deque()
+        self.normal_queue = collections.deque()
         self.have_drained_queues = False
         self.trampoline_enabled = True
         self.schedule = schedule
@@ -27,15 +23,15 @@ class Async(object):
         return self.is_tick_used or self.have_drained_queues
 
     def _async_invoke_later(self, fn, context):
-        self.late_queue.put(fn)
+        self.late_queue.append(fn)
         self.queue_tick(context)
 
     def _async_invoke(self, fn, context):
-        self.normal_queue.put(fn)
+        self.normal_queue.append(fn)
         self.queue_tick(context)
 
     def _async_settle_promise(self, promise):
-        self.normal_queue.put(promise)
+        self.normal_queue.append(promise)
         self.queue_tick(context=promise._trace)
 
     def invoke_later(self, fn, context):
@@ -70,8 +66,8 @@ class Async(object):
 
     def drain_queue(self, queue):
         from .promise import Promise
-        while not queue.empty():
-            fn = queue.get()
+        while queue:
+            fn = queue.popleft()
             if isinstance(fn, Promise):
                 fn._settle_promises()
                 continue
