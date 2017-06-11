@@ -87,9 +87,6 @@ class DataLoader(object):
         # Determine if a dispatch of this queue should be scheduled.
         # A single dispatch should be scheduled per queue at the time when the
         # queue changes from "empty" to "full".
-        # Determine if a dispatch of this queue should be scheduled.
-        # A single dispatch should be scheduled per queue at the time when the
-        # queue changes from "empty" to "full".
         if len(self._queue) == 1:
             if self.batch:
                 # If batching, schedule a task to dispatch the queue.
