@@ -317,21 +317,20 @@ def test_caches_failed_fetches():
 
     assert load_calls == [] 
 
+
 # It is resilient to job queue ordering
+@Promise.safe
+def test_batches_loads_occuring_within_promises():
+    identity_loader, load_calls = id_loader()
+    values = Promise.all([
+        identity_loader.load('A'),
+        Promise.resolve(None).then(lambda v: Promise.resolve(None)).then(
+            lambda v: identity_loader.load('B')
+        )
+    ]).get()
 
-# @Promise.safe
-# def test_batches_loads_occuring_within_promises():
-#     identity_loader, load_calls = id_loader()
-#     values = Promise.all([
-#         identity_loader.load('A'),
-#         Promise.resolve(None).then(lambda v: Promise.resolve(None)).then(
-#             lambda v: identity_loader.load('B')
-#         )
-#     ]).get()
-
-#     assert values == ['A', 'B']
-
-#     assert load_calls == [['A', 'B']]
+    assert values == ['A', 'B']
+    assert load_calls == [['A', 'B']]
 
 
 @Promise.safe
@@ -347,27 +346,28 @@ def test_catches_error_if_loader_resolver_fails():
     assert str(exc_info.value) == "Data loader batch_load_fn function raised an Exception: Exception('AOH!',)"
 
 
-# @Promise.safe
-# def test_can_call_a_loader_from_a_loader():
-#     deep_loader, deep_load_calls = id_loader()
-#     a_loader, a_load_calls = id_loader(resolve=lambda keys:deep_loader.load(tuple(keys)))
-#     b_loader, b_load_calls = id_loader(resolve=lambda keys:deep_loader.load(tuple(keys)))
+@Promise.safe
+def test_can_call_a_loader_from_a_loader():
+    deep_loader, deep_load_calls = id_loader()
+    a_loader, a_load_calls = id_loader(resolve=lambda keys:deep_loader.load(tuple(keys)))
+    b_loader, b_load_calls = id_loader(resolve=lambda keys:deep_loader.load(tuple(keys)))
 
-#     a1, b1, a2, b2 = Promise.all([
-#         a_loader.load('A1'),
-#         b_loader.load('B1'),
-#         a_loader.load('A2'),
-#         b_loader.load('B2')
-#     ]).get()
+    a1, b1, a2, b2 = Promise.all([
+        a_loader.load('A1'),
+        b_loader.load('B1'),
+        a_loader.load('A2'),
+        b_loader.load('B2')
+    ]).get()
 
-#     assert a1 == 'A1'
-#     assert b1 == 'B1'
-#     assert a2 == 'A2'
-#     assert b2 == 'B2'
+    assert a1 == 'A1'
+    assert b1 == 'B1'
+    assert a2 == 'A2'
+    assert b2 == 'B2'
 
-#     assert a_load_calls == [['A1', 'A2']]
-#     assert b_load_calls == [['B1', 'B2']]
-#     assert deep_load_calls == [[('A1', 'A2'), ('B1', 'B2')]]
+    assert a_load_calls == [['A1', 'A2']]
+    assert b_load_calls == [['B1', 'B2']]
+    assert deep_load_calls == [[('A1', 'A2'), ('B1', 'B2')]]
+
 
 @Promise.safe
 def test_dataloader_clear_with_missing_key_works():
