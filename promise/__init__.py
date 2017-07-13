@@ -24,11 +24,7 @@ if not __SETUP__:
         get_default_scheduler,
         set_default_scheduler
     )
-    from .scheduler import SyncScheduler
-    try:
-        from .thread_sheduler import ThreadScheduler
-    except ImportError:
-        ThreadScheduler = None
+    from .schedulers.immediate import ImmediateScheduler
 
     __all__ = [
         'Promise',
@@ -38,6 +34,5 @@ if not __SETUP__:
         'async_instance',
         'get_default_scheduler',
         'set_default_scheduler',
-        'SyncScheduler',
-        'ThreadScheduler'
+        'ImmediateScheduler'
     ]

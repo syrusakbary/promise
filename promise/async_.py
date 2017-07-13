@@ -6,8 +6,8 @@ class Async(object):
 
     def __init__(self, schedule):
         self.is_tick_used = False
-        self.late_queue = collections.deque()
-        self.normal_queue = collections.deque()
+        self.late_queue = collections.deque()  # type: ignore
+        self.normal_queue = collections.deque()  # type: ignore
         self.have_drained_queues = False
         self.trampoline_enabled = False
         self.schedule = schedule

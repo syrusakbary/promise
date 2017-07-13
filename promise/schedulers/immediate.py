@@ -1,13 +1,16 @@
-from threading import Thread, Event
+from threading import Event
 
 
-class ThreadScheduler(object):
+class ImmediateScheduler(object):
     def call(self, fn):
-        thread = Thread(target=fn)
-        thread.start()
+        try:
+            fn()
+        except:
+            pass
 
     def wait(self, promise, timeout=None):
         e = Event()
+
         def on_resolve_or_reject(_):
             e.set()
 

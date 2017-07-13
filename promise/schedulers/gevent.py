@@ -1,15 +1,17 @@
-from threading import Event
+from __future__ import absolute_import
+
+from gevent.event import Event
+import gevent
 
 
-class SyncScheduler(object):
+class GeventScheduler(object):
     def call(self, fn):
-        try:
-            fn()
-        except:
-            pass
+        # print fn
+        gevent.spawn(fn)
 
     def wait(self, promise, timeout=None):
         e = Event()
+
         def on_resolve_or_reject(_):
             e.set()
 

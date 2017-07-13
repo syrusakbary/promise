@@ -13,11 +13,12 @@ from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)
 from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
 from .promise_list import PromiseList
-from .scheduler import SyncScheduler
-# from .gevent_scheduler import GeventScheduler
-# from .thread_scheduler import ThreadScheduler
+from .schedulers.immediate import ImmediateScheduler
+# from .schedulers.gevent import GeventScheduler
+# from .schedulers.asyncio import AsyncioScheduler
+# from .schedulers.thread import ThreadScheduler
 
-async_instance = Async(SyncScheduler())
+async_instance = Async(ImmediateScheduler())
 
 
 def get_default_scheduler():

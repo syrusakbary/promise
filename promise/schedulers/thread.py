@@ -1,13 +1,14 @@
-from gevent.event import Event
-import gevent
+from threading import Thread, Event
 
-class GeventScheduler(object):
+
+class ThreadScheduler(object):
     def call(self, fn):
-        # print fn
-        gevent.spawn(fn)
+        thread = Thread(target=fn)
+        thread.start()
 
     def wait(self, promise, timeout=None):
         e = Event()
+
         def on_resolve_or_reject(_):
             e.set()
 
