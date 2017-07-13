@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import partial, wraps
 from sys import version_info, exc_info
-from threading import Event, RLock
+from threading import RLock
 from types import TracebackType
 
 from six import reraise
@@ -87,7 +87,6 @@ class Promise(object):
     _rejection_handler0 = None  # type: Union[Callable, partial]
     _promise0 = None  # type: Promise
     _future = None  # type: Future
-    _event_instance = None # type: Event
     _traceback = None # type: TracebackType
     # _trace = None
     _is_waiting = False
@@ -366,8 +365,6 @@ class Promise(object):
     def _set_followee(self, promise):
         assert self._is_following
         assert not isinstance(self._rejection_handler0, Promise)
-        if not self._event_instance:
-            self._event_instance = promise._event_instance
         self._rejection_handler0 = promise
 
     def _settle_promises(self):
@@ -407,31 +404,18 @@ class Promise(object):
 
         if error is not None:
             self._reject_callback(error, True, traceback)
-
-    def _event(self):
-        if not self._event_instance:
-            self._event_instance = Event()
-        return self._event_instance
-
-    def _wait(self, timeout=None):
-        if not self.is_pending:
+    
+    @classmethod
+    def wait(self, promise, timeout=None):
+        if not promise.is_pending:
             # We return if the promise is already
             # fulfilled or rejected
             return
+        target = promise._target()
+        async_instance.schedule.wait(target, timeout)
 
-        target = self._target()
-
-        def on_resolve_or_reject(_):
-            target._event().set()
-
-        target._then(on_resolve_or_reject, on_resolve_or_reject)
-
-        if timeout is None and IS_PYTHON2:
-            timeout = float("Inf")
-
-        waited = target._event().wait(timeout)
-        if not waited:
-            raise Exception("Timeout")
+    def _wait(self, timeout=None):
+        self.wait(self, timeout)
 
     def get(self, timeout=None):
         target = self._target()
