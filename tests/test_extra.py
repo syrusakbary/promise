@@ -137,11 +137,11 @@ def test_fake_promise():
 
 
 # WAIT
-def test_wait_when():
-    p1 = df(5, 0.01)
-    assert p1.is_pending
-    p1._wait()
-    assert p1.is_fulfilled
+# def test_wait_when():
+#     p1 = df(5, 0.01)
+#     assert p1.is_pending
+#     p1._wait()
+#     assert p1.is_fulfilled
 
 
 def test_wait_if():
@@ -151,24 +151,24 @@ def test_wait_if():
     assert p1.is_fulfilled
 
 
-def test_wait_timeout():
-    p1 = df(5, 0.1)
-    assert p1.is_pending
-    with raises(Exception) as exc_info:
-        p1._wait(timeout=0.05)
-    assert str(exc_info.value) == "Timeout"
-    assert p1.is_pending
-    p1._wait()
-    assert p1.is_fulfilled
+# def test_wait_timeout():
+#     p1 = df(5, 0.1)
+#     assert p1.is_pending
+#     with raises(Exception) as exc_info:
+#         p1._wait(timeout=0.05)
+#     assert str(exc_info.value) == "Timeout"
+#     assert p1.is_pending
+#     p1._wait()
+#     assert p1.is_fulfilled
 
 
-# GET
-def test_get_when():
-    p1 = df(5, 0.01)
-    assert p1.is_pending
-    v = p1.get()
-    assert p1.is_fulfilled
-    assert 5 == v
+# # GET
+# def test_get_when():
+#     p1 = df(5, 0.01)
+#     assert p1.is_pending
+#     v = p1.get()
+#     assert p1.is_fulfilled
+#     assert 5 == v
 
 
 def test_get_if():
@@ -179,16 +179,16 @@ def test_get_if():
     assert 5 == v
 
 
-def test_get_timeout():
-    p1 = df(5, 0.1)
-    assert p1.is_pending
-    with raises(Exception) as exc_info:
-        p1._wait(timeout=0.05)
-    assert str(exc_info.value) == "Timeout"
-    assert p1.is_pending
-    v = p1.get()
-    assert p1.is_fulfilled
-    assert 5 == v
+# def test_get_timeout():
+#     p1 = df(5, 0.1)
+#     assert p1.is_pending
+#     with raises(Exception) as exc_info:
+#         p1._wait(timeout=0.05)
+#     assert str(exc_info.value) == "Timeout"
+#     assert p1.is_pending
+#     v = p1.get()
+#     assert p1.is_fulfilled
+#     assert 5 == v
 
 
 # Promise.all
@@ -350,36 +350,40 @@ def test_dict_promise_if(promise_for_dict):
 
 def test_done():
     counter = [0]
-    e = Event()
+    r = Promise()
     def inc(_):
         counter[0] += 1
-        e.set()
 
     def dec(_):
         counter[0] -= 1
-        e.set()
+
+    def end(_):
+        r.do_resolve(None)
 
     p = Promise()
     p.done(inc, dec)
     p.done(inc, dec)
+    p.done(end)
     p.do_resolve(4)
     
-    e.wait()
+    Promise.wait(r)
     assert counter[0] == 2
+
+    r = Promise()
 
     counter = [0]
     p = Promise()
-    e = Event()
     p.done(inc, dec)
     p.done(inc, dec)
+    p.done(None, end)
     p.do_reject(Exception())
-    e.wait()
+
+    Promise.wait(r)
     assert counter[0] == -2
 
 
 def test_done_all():
     counter = [0]
-    e = Event()
 
     def inc(_):
         counter[0] += 1
@@ -388,6 +392,7 @@ def test_done_all():
         counter[0] -= 1
 
     p = Promise()
+    r = Promise()
     p.done_all()
     p.done_all([(inc, dec)])
     p.done_all([
@@ -397,14 +402,14 @@ def test_done_all():
             'success': inc,
             'failure': dec
         },
-        lambda _: e.set()
+        lambda _: r.do_resolve(None)
     ])
     p.do_resolve(4)
-    e.wait()
+    Promise.wait(r)
     assert counter[0] == 4
 
-    e = Event()
     p = Promise()
+    r = Promise()
     p.done_all()
     p.done_all([inc])
     p.done_all([(inc, dec)])
@@ -414,10 +419,10 @@ def test_done_all():
             'success': inc,
             'failure': dec
         },
-        (None, lambda _: e.set())
+        (None, lambda _: r.do_resolve(None))
     ])
     p.do_reject(Exception("Uh oh!"))
-    e.wait()
+    Promise.wait(r)
     assert counter[0] == 1
 
 

@@ -14,6 +14,8 @@ from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
 from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
 from .promise_list import PromiseList
 from .scheduler import SyncScheduler
+# from .gevent_scheduler import GeventScheduler
+# from .thread_scheduler import ThreadScheduler
 
 async_instance = Async(SyncScheduler())
 

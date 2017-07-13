@@ -1,10 +1,10 @@
-from threading import Thread, Event
+from gevent.event import Event
+import gevent
 
-
-class ThreadScheduler(object):
+class GeventScheduler(object):
     def call(self, fn):
-        thread = Thread(target=fn)
-        thread.start()
+        # print fn
+        gevent.spawn(fn)
 
     def wait(self, promise, timeout=None):
         e = Event()

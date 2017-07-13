@@ -179,25 +179,11 @@ class DataLoader(object):
 # Private: cached resolved Promise instance
 resolved_promise = None
 
-# def enqueue_post_promise_job(fn):
-#     # t.run()
-#     # from threading import Timer
-#     # t = Timer(0.10, fn)
-#     # t.run()
-#     # return fn()
-#     global resolved_promise
-#     if not resolved_promise:
-#         resolved_promise = Promise.resolve(None)
-#     resolved_promise.then(lambda v: queue.invoke(fn))  # TODO: Change to async
-
 def enqueue_post_promise_job(fn):
     global resolved_promise
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
-    # queue.invoke(fn)
     resolved_promise.then(lambda v: async_instance.invoke(fn))
-    # Promise.resolve(None).then(lambda v: async.invoke(fn, context=Context.peek_context()))
-    # resolved_promise.then(lambda v: queue.invoke(fn, context=Context.peek_context()))
 
 
 def dispatch_queue(loader):
