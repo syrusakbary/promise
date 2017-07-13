@@ -9,7 +9,7 @@ class Async(object):
         self.late_queue = collections.deque()
         self.normal_queue = collections.deque()
         self.have_drained_queues = False
-        self.trampoline_enabled = True
+        self.trampoline_enabled = False
         self.schedule = schedule
 
     def enable_trampoline(self):
@@ -21,27 +21,27 @@ class Async(object):
     def have_items_queued(self):
         return self.is_tick_used or self.have_drained_queues
 
-    def _async_invoke_later(self, fn, context):
+    def _async_invoke_later(self, fn):
         self.late_queue.append(fn)
-        self.queue_tick(context)
+        self.queue_tick()
 
-    def _async_invoke(self, fn, context):
+    def _async_invoke(self, fn):
         self.normal_queue.append(fn)
-        self.queue_tick(context)
+        self.queue_tick()
 
     def _async_settle_promise(self, promise):
         self.normal_queue.append(promise)
-        self.queue_tick(context=promise._trace)
+        self.queue_tick()
 
-    def invoke_later(self, fn, context):
+    def invoke_later(self, fn):
         if self.trampoline_enabled:
-            self._async_invoke_later(fn, context)
+            self._async_invoke_later(fn)
         else:
             self.schedule.call_later(0.1, fn)
 
-    def invoke(self, fn, context):
+    def invoke(self, fn):
         if self.trampoline_enabled:
-            self._async_invoke(fn, context)
+            self._async_invoke(fn)
         else:
             self.schedule.call(
                 fn
@@ -79,16 +79,10 @@ class Async(object):
         self.have_drained_queues = True
         self.drain_queue(self.late_queue)
 
-    def queue_context_tick(self):
+    def queue_tick(self):
         if not self.is_tick_used:
             self.is_tick_used = True
             self.schedule.call(self.drain_queues)
-
-    def queue_tick(self, context):
-        if not context:
-            self.queue_context_tick()
-        else:
-            (context._parent or context).on_exit(self.queue_context_tick)
 
     def reset(self):
         self.is_tick_used = False

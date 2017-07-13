@@ -4,7 +4,6 @@ from functools import partial
 from typing import List, Sized  # flake8: noqa
 
 from .promise import Promise, async_instance
-from .context import Context
 
 
 def get_chunks(iterable_obj, chunk_size=1):
@@ -196,7 +195,7 @@ def enqueue_post_promise_job(fn):
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
     # queue.invoke(fn)
-    async_instance.invoke(fn, context=Context.peek_context())
+    resolved_promise.then(lambda v: async_instance.invoke(fn))
     # Promise.resolve(None).then(lambda v: async.invoke(fn, context=Context.peek_context()))
     # resolved_promise.then(lambda v: queue.invoke(fn, context=Context.peek_context()))
 

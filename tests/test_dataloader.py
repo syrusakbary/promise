@@ -378,6 +378,7 @@ def test_dataloader_clear_with_missing_key_works():
     assert a_loader.clear('A1') == a_loader
 
 
+@Promise.safe
 def test_wrong_loader_return_type_does_not_block_async_instance():
     def do_resolve(x):
         return x

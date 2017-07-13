@@ -12,7 +12,6 @@ from .async_ import Async
 from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)
 from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
-from .context import Context
 from .promise_list import PromiseList
 from .scheduler import SyncScheduler
 
@@ -66,9 +65,6 @@ def try_catch(handler, *args, **kwargs):
         return (None, (e, tb))
 
 
-peek_context = Context.peek_context
-
-
 class Promise(object):
     """
     This is the Promise class that complies
@@ -113,7 +109,6 @@ class Promise(object):
         # self._promise0 = None  # type: Promise
         # self._future = None  # type: Future
         # self._event_instance = None # type: Event
-        self._trace = peek_context()
 
         # self._is_waiting = False
         if executor is not None:
@@ -132,11 +127,6 @@ class Promise(object):
         return self._future
 
     def __iter__(self):
-        if self._trace:
-            # If we wait, we drain the queue of the
-            # callbacks waiting on the context exit
-            # so we avoid a blocking state
-            self._trace.drain_queue()
         return iterate_promise(self._target())
 
     __await__ = __iter__
@@ -164,7 +154,7 @@ class Promise(object):
         if not self.is_thenable(value):
             return self._fulfill(value)
 
-        promise = self._try_convert_to_promise(value, self)._target()
+        promise = self._try_convert_to_promise(value)._target()
         if promise == self:
             self._reject(make_self_resolution_error())
             return
@@ -287,10 +277,7 @@ class Promise(object):
         self._settle_promise(promise, handler, value, traceback)
 
     def _settle_promise_from_handler(self, handler, value, promise):
-        # promise._push_context()
-        # with Context():
         value, error_with_tb = try_catch(handler, value)  # , promise
-        # promise_created = promise._pop_context()
 
         if error_with_tb:
             error, tb = error_with_tb
@@ -400,26 +387,23 @@ class Promise(object):
 
     def _resolve_from_executor(self, executor):
         # self._capture_stacktrace()
-        # self._push_context()
-        with Context():
-            synchronous = True
+        synchronous = True
 
-            def resolve(value):
-                self._resolve_callback(value)
+        def resolve(value):
+            self._resolve_callback(value)
 
-            def reject(reason):
-                self._reject_callback(reason, synchronous)
+        def reject(reason):
+            self._reject_callback(reason, synchronous)
 
-            error = None
-            traceback = None
-            try:
-                executor(resolve, reject)
-            except Exception as e:
-                traceback = exc_info()[2]
-                error = e
+        error = None
+        traceback = None
+        try:
+            executor(resolve, reject)
+        except Exception as e:
+            traceback = exc_info()[2]
+            error = e
 
-            synchronous = False
-        # self._pop_context()
+        synchronous = False
 
         if error is not None:
             self._reject_callback(error, True, traceback)
@@ -441,12 +425,6 @@ class Promise(object):
             target._event().set()
 
         target._then(on_resolve_or_reject, on_resolve_or_reject)
-
-        if target._trace:
-            # If we wait, we drain the queue of the
-            # callbacks waiting on the context exit
-            # so we avoid a blocking state
-            target._trace.drain_queue()
 
         if timeout is None and IS_PYTHON2:
             timeout = float("Inf")
@@ -533,11 +511,9 @@ class Promise(object):
                 # target._rejection_is_unhandled = False
             async_instance.invoke(
                 partial(target._settle_promise, promise, handler, value, traceback),
-                context=target._trace,
                 # target._settle_promise instead?
                 # settler,
                 # target,
-                # Context(handler, promise, value),
             )
 
         return promise
@@ -632,7 +608,7 @@ class Promise(object):
         return promises
 
     @classmethod
-    def _try_convert_to_promise(cls, obj, context=None):
+    def _try_convert_to_promise(cls, obj):
         _type = obj.__class__
         if issubclass(_type, cls):
             return obj
@@ -697,15 +673,21 @@ class Promise(object):
 
         return wrapper
 
-    @classmethod
-    def safe(cls, fn):
-        from functools import wraps
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            with Context():
-                return fn(*args, **kwargs)
+    safe = promisify
 
-        return wrapper
+    # _safe_resolved_promise = None
+
+    # @classmethod
+    # def safe(cls, fn):
+    #     from functools import wraps
+    #     if not cls._safe_resolved_promise:
+    #         cls._safe_resolved_promise = Promise.resolve(None)
+
+    #     @wraps(fn)
+    #     def wrapper(*args, **kwargs):
+    #         return cls._safe_resolved_promise.then(lambda v: fn(*args, **kwargs))
+
+    #     return wrapper
 
     @classmethod
     def all(cls, promises):
