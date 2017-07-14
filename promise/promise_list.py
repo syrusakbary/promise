@@ -9,9 +9,6 @@ class PromiseList(object):
     def __init__(self, values, promise_class):
         self._promise_class = promise_class
         self.promise = self._promise_class()
-        # if (isinstance(values, Promise)):
-        #     # promise._propagate_from(values)
-        #     pass
 
         self._values = values
         self._length = 0
@@ -25,7 +22,7 @@ class PromiseList(object):
         Promise = self._promise_class
         values = self._values
         if Promise.is_thenable(values):
-            values = Promise._try_convert_to_promise(self._values, self.promise)._target()
+            values = Promise._try_convert_to_promise(self._values)._target()
             if values.is_fulfilled:
                 values = values._value()
             elif values.is_rejected:
@@ -59,7 +56,7 @@ class PromiseList(object):
 
         for i, val in enumerate(values):
             if Promise.is_thenable(val):
-                maybe_promise = Promise._try_convert_to_promise(val, self.promise)._target()
+                maybe_promise = Promise._try_convert_to_promise(val)._target()
                 # if is_resolved:
                 #     # maybe_promise.suppressUnhandledRejections
                 #     pass

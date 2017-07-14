@@ -104,11 +104,11 @@ def test_benchmark_promise_all(benchmark):
 
 
 def test_benchmark_promise_all_promise(benchmark):
-    values = [Promise.resolve(i) for i in range(1000)]
+    values = [Promise.resolve(i) for i in range(100000)]
     def create_promise():  # unnecessary function call
         return Promise.all(values)
 
     result = benchmark(create_promise)
 
     assert isinstance(result, Promise)
-    assert result.get() == list(range(1000))
+    assert result.get() == list(range(100000))

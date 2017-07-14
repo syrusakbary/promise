@@ -541,17 +541,15 @@ def test_promise_resolved_after():
     """
 
     c = Counter()
-    e = Event()
 
     def check(v, c):
         assert v == 5
-        e.set()
         c.tick()
 
     p1 = Promise()
     p2 = p1.then(lambda v: check(v, c))
     p1.do_resolve(5)
-    e.wait()
+    Promise.wait(p2)
 
     assert 1 == c.value()
 
