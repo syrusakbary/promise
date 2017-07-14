@@ -129,13 +129,6 @@ def test_thrown_exceptions_preserve_stacktrace():
     assert assert_exc.traceback[-1].path.strpath == __file__
 
 
-def test_fake_promise():
-    p = Promise()
-    p.do_resolve(FakeThenPromise())
-    assert p.is_rejected
-    assert_exception(p.reason, Exception, "FakeThenPromise raises in 'then'")
-
-
 # WAIT
 # def test_wait_when():
 #     p1 = df(5, 0.01)
@@ -493,7 +486,7 @@ def test_is_thenable_promise():
 
 def test_is_thenable_then_object():
     promise = FakeThenPromise()
-    assert is_thenable(promise)
+    assert not is_thenable(promise)
 
 
 def test_is_thenable_future():
@@ -519,13 +512,6 @@ def test_resolve_then_object(resolve):
     promise = FakeThenPromise(raises=False)
     p = resolve(promise)
     assert isinstance(p, Promise)
-
-
-def test_resolve_then_object_exception(resolve):
-    promise = FakeThenPromise()
-    with raises(Exception) as excinfo:
-        resolve(promise).get()
-    assert str(excinfo.value) == "FakeThenPromise raises in 'then'"
 
 
 def test_resolve_future(resolve):
@@ -600,17 +586,6 @@ def test_promise_loop():
 
     p = Promise(executor)
     assert p.get(.1) == 2
-
-
-def test_resolve_promise_like(resolve):
-    class CustomThenable(object):
-        def then(self, resolve, reject):
-            resolve(True)
-
-    instance = CustomThenable()
-
-    promise = resolve(instance)
-    assert promise.get() == True
 
 
 def test_resolve_future_like(resolve):

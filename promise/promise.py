@@ -90,7 +90,7 @@ class Promise(object):
     _rejection_handler0 = None  # type: Union[Callable, partial]
     _promise0 = None  # type: Promise
     _future = None  # type: Future
-    _traceback = None # type: TracebackType
+    _traceback = None  # type: TracebackType
     # _trace = None
     _is_waiting = False
 
@@ -226,7 +226,8 @@ class Promise(object):
         pass
 
     def _reject_callback(self, reason, synchronous=False, traceback=None):
-        assert isinstance(reason, Exception), "A promise was rejected with a non-error: {}".format(reason)
+        assert isinstance(
+            reason, Exception), "A promise was rejected with a non-error: {}".format(reason)
         # trace = ensure_error_object(reason)
         # has_stack = trace is reason
         # self._attach_extratrace(trace, synchronous and has_stack)
@@ -376,7 +377,8 @@ class Promise(object):
             if self._state == STATE_REJECTED:
                 reason = self._fulfillment_handler0
                 traceback = self._traceback
-                self._settle_promise0(self._rejection_handler0, reason, traceback)
+                self._settle_promise0(
+                    self._rejection_handler0, reason, traceback)
                 self._reject_promises(length, reason)
             else:
                 value = self._rejection_handler0
@@ -407,7 +409,7 @@ class Promise(object):
 
         if error is not None:
             self._reject_callback(error, True, traceback)
-    
+
     @classmethod
     def wait(self, promise, timeout=None):
         if not promise.is_pending:
@@ -424,7 +426,6 @@ class Promise(object):
         target = self._target()
         self._wait(timeout or DEFAULT_TIMEOUT)
         return self._target_settled_value(_raise=True)
-
 
     def _target_settled_value(self, _raise=False):
         return self._target()._settled_value(_raise)
@@ -497,7 +498,8 @@ class Promise(object):
                 handler = did_reject
                 # target._rejection_is_unhandled = False
             async_instance.invoke(
-                partial(target._settle_promise, promise, handler, value, traceback),
+                partial(target._settle_promise, promise,
+                        handler, value, traceback),
                 # target._settle_promise instead?
                 # settler,
                 # target,
@@ -597,7 +599,9 @@ class Promise(object):
     @classmethod
     def _try_convert_to_promise(cls, obj):
         _type = obj.__class__
-        if issubclass(_type, cls):
+        if issubclass(_type, Promise):
+            if cls is not Promise:
+                return cls(obj.then)
             return obj
 
         if iscoroutine(obj):
@@ -609,14 +613,12 @@ class Promise(object):
                 if obj.done():
                     _process_future_result(resolve, reject)(obj)
                 else:
-                    obj.add_done_callback(_process_future_result(resolve, reject))
+                    obj.add_done_callback(
+                        _process_future_result(resolve, reject))
                 # _process_future_result(resolve, reject)(obj)
             promise = cls(executor)
             promise._future = obj
             return promise
-        
-        if is_promise_like(_type):
-            return cls(obj.then)
 
         return obj
 
@@ -648,7 +650,8 @@ class Promise(object):
     @classmethod
     def promisify(cls, f):
         if not callable(f):
-            warn("Promise.promisify is now a function decorator, please use Promise.resolve instead.")
+            warn(
+                "Promise.promisify is now a function decorator, please use Promise.resolve instead.")
             return cls.resolve(f)
 
         @wraps(f)
@@ -672,7 +675,7 @@ class Promise(object):
 
     #     @wraps(fn)
     #     def wrapper(*args, **kwargs):
-    #         return cls._safe_resolved_promise.then(lambda v: fn(*args, **kwargs))
+    # return cls._safe_resolved_promise.then(lambda v: fn(*args, **kwargs))
 
     #     return wrapper
 
@@ -710,24 +713,19 @@ class Promise(object):
         if obj is None or _type in BASE_TYPES:
             return False
 
-        return issubclass(_type, cls) or \
+        return issubclass(_type, Promise) or \
             iscoroutine(obj) or \
-            is_future_like(_type) or \
-            is_promise_like(_type)
+            is_future_like(_type)
 
 
 _type_done_callbacks = {}  # type: Dict[type, bool]
+
+
 def is_future_like(_type):
     if _type not in _type_done_callbacks:
-        _type_done_callbacks[_type] = callable(getattr(_type, 'add_done_callback', None))
+        _type_done_callbacks[_type] = callable(
+            getattr(_type, 'add_done_callback', None))
     return _type_done_callbacks[_type]
-
-
-_type_then_callbacks = {}  # type: Dict[type, bool]
-def is_promise_like(_type):
-    if _type not in _type_then_callbacks:
-        _type_then_callbacks[_type] = callable(getattr(_type, 'then', None))
-    return _type_then_callbacks[_type]
 
 
 promisify = Promise.promisify
