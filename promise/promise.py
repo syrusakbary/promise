@@ -411,13 +411,8 @@ class Promise(object):
             self._reject_callback(error, True, traceback)
 
     @classmethod
-    def wait(self, promise, timeout=None):
-        if not promise.is_pending:
-            # We return if the promise is already
-            # fulfilled or rejected
-            return
-        target = promise._target()
-        async_instance.schedule.wait(target, timeout)
+    def wait(cls, promise, timeout=None):
+        return async_instance.wait(promise, timeout)
 
     def _wait(self, timeout=None):
         self.wait(self, timeout)
@@ -663,21 +658,19 @@ class Promise(object):
 
         return wrapper
 
-    safe = promisify
+    _safe_resolved_promise = None
 
-    # _safe_resolved_promise = None
+    @classmethod
+    def safe(cls, fn):
+        from functools import wraps
+        if not cls._safe_resolved_promise:
+            cls._safe_resolved_promise = Promise.resolve(None)
 
-    # @classmethod
-    # def safe(cls, fn):
-    #     from functools import wraps
-    #     if not cls._safe_resolved_promise:
-    #         cls._safe_resolved_promise = Promise.resolve(None)
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            return cls._safe_resolved_promise.then(lambda v: fn(*args, **kwargs))
 
-    #     @wraps(fn)
-    #     def wrapper(*args, **kwargs):
-    # return cls._safe_resolved_promise.then(lambda v: fn(*args, **kwargs))
-
-    #     return wrapper
+        return wrapper
 
     @classmethod
     def all(cls, promises):

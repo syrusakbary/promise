@@ -9,7 +9,7 @@ class Async(object):
         self.late_queue = collections.deque()  # type: ignore
         self.normal_queue = collections.deque()  # type: ignore
         self.have_drained_queues = False
-        self.trampoline_enabled = False
+        self.trampoline_enabled = True
         self.schedule = schedule
 
     def enable_trampoline(self):
@@ -71,6 +71,41 @@ class Async(object):
                 fn._settle_promises()
                 continue
             fn()
+
+    def drain_queue_until_resolved(self, promise):
+        from .promise import Promise
+        queue = self.normal_queue
+        while queue:
+            if not promise.is_pending:
+                return
+            fn = queue.popleft()
+            if (isinstance(fn, Promise)):
+                fn._settle_promises()
+                continue
+            fn()
+
+        self.reset()
+        self.have_drained_queues = True
+        self.drain_queue(self.late_queue)
+
+    def wait(self, promise, timeout=None):
+        if not promise.is_pending:
+            # We return if the promise is already
+            # fulfilled or rejected
+            return
+
+        target = promise._target()
+
+        if self.trampoline_enabled:
+            if self.is_tick_used:
+                self.drain_queue_until_resolved(target)
+
+            if not promise.is_pending:
+                # We return if the promise is already
+                # fulfilled or rejected
+                return
+
+        self.schedule.wait(target, timeout)
 
     def drain_queues(self):
         assert self.is_tick_used
