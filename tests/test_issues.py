@@ -82,3 +82,12 @@ def test_issue_26():
 #     assert no_wait == [0, 3, 6, 9]
 #     assert no_wait == wait_a_bit
 #     assert no_wait == wait_longer
+
+
+def test_issue_33():
+    def do(x):
+        v = Promise.resolve("ok").then(lambda x: x).get()
+        return v
+
+    p = Promise.resolve(None).then(do)
+    assert p.get() == "ok"
