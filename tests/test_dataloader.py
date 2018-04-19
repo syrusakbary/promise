@@ -6,13 +6,13 @@ from promise.dataloader import DataLoader
 
 def id_loader(**options):
     load_calls = []
-    
+
     resolve = options.pop('resolve', Promise.resolve)
 
     def fn(keys):
         load_calls.append(keys)
         return resolve(keys)
-    
+
     identity_loader = DataLoader(fn, **options)
     return identity_loader, load_calls
 
@@ -349,7 +349,7 @@ def test_caches_failed_fetches():
         with raises(Exception) as exc_info:
             identity_loader.load(1).get()
 
-        assert load_calls == [] 
+        assert load_calls == []
 
     do().get()
 
@@ -383,7 +383,7 @@ def test_catches_error_if_loader_resolver_fails():
         with raises(Exception) as exc_info:
             a_loader.load('A1').get()
 
-        assert str(exc_info.value) == "Data loader batch_load_fn function raised an Exception: Exception('AOH!',)"
+        assert str(exc_info.value) == "AOH!"
 
     do().get()
 

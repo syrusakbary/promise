@@ -221,7 +221,7 @@ def dispatch_queue_batch(loader, queue):
         return failed_dispatch(
             loader,
             queue,
-            Exception("Data loader batch_load_fn function raised an Exception: {}".format(repr(e)))
+            e
         )
 
     # Assert the expected response from batch_load_fn
