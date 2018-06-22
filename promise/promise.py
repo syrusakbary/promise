@@ -465,9 +465,9 @@ class Promise(Generic[T]):
             # type: (T) -> None
             self._resolve_callback(value)
 
-        def reject(reason):
-            # type: (Exception) -> None
-            self._reject_callback(reason, synchronous)
+        def reject(reason, traceback=None):
+            # type: (Exception, TracebackType) -> None
+            self._reject_callback(reason, synchronous, traceback)
 
         error = None
         traceback = None
@@ -827,9 +827,10 @@ def _process_future_result(resolve, reject):
     # type: (Callable, Callable) -> Callable
     def handle_future_result(future):
         # type: (Any) -> None
-        exception = future.exception()
-        if exception:
-            reject(exception)
-        else:
+        try:
             resolve(future.result())
+        except Exception as e:
+            tb = exc_info()[2]
+            reject(e, tb)
+
     return handle_future_result
