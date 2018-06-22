@@ -6,6 +6,7 @@ import sys
 
 
 def warn(msg):
+    # type: (str) -> None
     warnings.simplefilter('always', DeprecationWarning)  # turn off filter
     warnings.warn(msg, category=DeprecationWarning, stacklevel=2)
     warnings.simplefilter('default', DeprecationWarning)  # reset filter

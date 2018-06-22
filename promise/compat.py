@@ -23,6 +23,6 @@ try:
     from .iterate_promise import iterate_promise
 except (SyntaxError, ImportError):
 
-    def iterate_promise(promise):
+    def iterate_promise(promise):  # type: ignore
         raise Exception(
             'You need "yield from" syntax for iterate in a Promise.')

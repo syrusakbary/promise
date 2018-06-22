@@ -64,3 +64,8 @@ target/
 
 # OS X
 .DS_Store
+/.vscode
+/.pytest_cache
+/.pyre
+/.mypy_cache
+/type_info.json

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
-from gevent.event import Event
-import gevent
+from gevent.event import Event  # type: ignore
+import gevent  # type: ignore
 
 
 class GeventScheduler(object):
