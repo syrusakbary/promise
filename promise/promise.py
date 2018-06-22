@@ -829,6 +829,8 @@ def _process_future_result(resolve, reject):
         # type: (Any) -> None
         exception = future.exception()
         if exception:
+            if hasattr(future, '_exc_info'):
+                exception.stack = future._exc_info[2]
             reject(exception)
         else:
             resolve(future.result())
