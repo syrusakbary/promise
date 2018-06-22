@@ -6,7 +6,7 @@ from types import TracebackType
 
 from six import reraise  # type: ignore
 from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
-                    Union)
+                    Tuple, Union, TypeVar, Generic, Hashable)
 
 from .async_ import Async
 from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
@@ -14,15 +14,6 @@ from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
 from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
 from .promise_list import PromiseList
 from .schedulers.immediate import ImmediateScheduler
-from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import Dict
-from typing import List
-from typing import Union
-from typing import Iterator
-from typing import Tuple
-from typing import TypeVar, Generic, Hashable
 # from .schedulers.gevent import GeventScheduler
 # from .schedulers.asyncio import AsyncioScheduler
 # from .schedulers.thread import ThreadScheduler

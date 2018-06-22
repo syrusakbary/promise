@@ -34,5 +34,5 @@ matrix:
     script: flake8
   - python: '3.5'
     script: |
-      pip install mypy
-      mypy promise/  --check-untyped-defs  --ignore-missing-imports
+      pip install pyre-check
+      pyre --source-directory promise check

@@ -1,12 +1,7 @@
 from functools import partial
 from collections import Iterable
-from typing import Any
-from typing import Optional
-from typing import Tuple
-from typing import Union
-from typing import List
-from typing import Type
-from typing import Collection
+from typing import (Any, Optional, Tuple, Union, List,
+                    Type, Collection)  # flake8: noqa
 if False:
     from .promise import Promise
 

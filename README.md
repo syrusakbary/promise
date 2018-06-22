@@ -151,7 +151,7 @@ With `mypy`
 
 ```sh
 pip install mypy
-mypy promise
+mypy promise  --ignore-missing-imports
 ```
 
 with `pyre`:

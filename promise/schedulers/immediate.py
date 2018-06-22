@@ -1,7 +1,5 @@
 from threading import Event
-from typing import Callable
-from typing import Any
-from typing import Optional
+from typing import Callable, Any, Optional  # flake8: noqa
 if False:
     from ..promise import Promise
 

@@ -50,6 +50,6 @@ setup(
         'test': tests_require,
     },
     install_requires=[
-        'typing', 'six'
+        'typing>=3.6.4', 'six'
     ],
     tests_require=tests_require, )

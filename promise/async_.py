@@ -1,22 +1,18 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
-import collections
-from .schedulers.immediate import ImmediateScheduler
-from typing import Callable
 from collections import deque
-from typing import Optional
-from typing import Union
+from typing import Callable, Optional, Union  # flake8: noqa
 if False:
     from .promise import Promise
 
 
 class Async(object):
 
-    def __init__(self):
+    def __init__(self, trampoline_enabled=True):
         self.is_tick_used = False
-        self.late_queue = collections.deque()  # type: ignore
-        self.normal_queue = collections.deque()  # type: ignore
+        self.late_queue = deque()  # type: ignore
+        self.normal_queue = deque()  # type: ignore
         self.have_drained_queues = False
-        self.trampoline_enabled = True
+        self.trampoline_enabled = trampoline_enabled
 
     def enable_trampoline(self):
         self.trampoline_enabled = True
@@ -32,7 +28,7 @@ class Async(object):
         self.queue_tick(scheduler)
 
     def _async_invoke(self, fn, scheduler):
-        # type: (Callable, ImmediateScheduler) -> None
+        # type: (Callable, Any) -> None
         self.normal_queue.append(fn)
         self.queue_tick(scheduler)
 
@@ -48,7 +44,7 @@ class Async(object):
             scheduler.call_later(0.1, fn)
 
     def invoke(self, fn, scheduler):
-        # type: (Callable, ImmediateScheduler) -> None
+        # type: (Callable, Any) -> None
         if self.trampoline_enabled:
             self._async_invoke(fn, scheduler)
         else:
@@ -66,7 +62,7 @@ class Async(object):
             )
 
     def throw_later(self, reason, scheduler):
-        # type: (Exception, ImmediateScheduler) -> None
+        # type: (Exception, Any) -> None
         def fn():
             # type: () -> None
             raise reason
@@ -119,8 +115,6 @@ class Async(object):
                 # We return if the promise is already
                 # fulfilled or rejected
                 return
-        print("WAIT", promise, promise.scheduler, target)
-
         target.scheduler.wait(target, timeout)
 
     def drain_queues(self):
@@ -132,9 +126,8 @@ class Async(object):
         self.drain_queue(self.late_queue)
 
     def queue_tick(self, scheduler):
-        # type: (ImmediateScheduler) -> None
+        # type: (Any) -> None
         if not self.is_tick_used:
-            print("QUEUE TICK")
             self.is_tick_used = True
             scheduler.call(self.drain_queues)
 
