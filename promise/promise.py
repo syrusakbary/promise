@@ -17,7 +17,7 @@ from typing import TypeVar, Generic
 # from .schedulers.thread import ThreadScheduler
 
 if False:
-    from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
+    from typing import (Type, List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
                         Tuple, Union, Generic, Hashable)
 
 
@@ -81,6 +81,7 @@ def try_catch(handler,  # type: Callable
 
 
 T = TypeVar('T')
+S = TypeVar('S', contravariant=True)
 
 
 class Promise(Generic[T]):
@@ -554,10 +555,10 @@ class Promise(Generic[T]):
         return self.then(None, on_rejection)
 
     def _then(self,
-              did_fulfill=None,  # type: Optional[Callable[[T], None]]
-              did_reject=None,  # type: Optional[Callable]
+              did_fulfill=None,  # type: Optional[Callable[[T], S]]
+              did_reject=None,  # type: Optional[Callable[[Exception], S]]
               ):
-        # type: (...) -> Promise
+        # type: (...) -> Promise[S]
         promise = self.__class__()
         target = self._target()
 
@@ -572,7 +573,7 @@ class Promise(Generic[T]):
             elif state == STATE_REJECTED:
                 value = target._fulfillment_handler0
                 traceback = target._traceback
-                handler = did_reject
+                handler = did_reject  # type: ignore
                 # target._rejection_is_unhandled = False
             async_instance.invoke(
                 partial(target._settle_promise, promise,
@@ -590,7 +591,7 @@ class Promise(Generic[T]):
     do_reject = _reject_callback
 
     def then(self, did_fulfill=None, did_reject=None):
-        # type: (Promise, Callable[[T], Any], Optional[Callable]) -> Promise
+        # type: (Promise, Callable[[T], S], Optional[Callable[[Exception], S]]) -> Promise[S]
         """
         This method takes two optional arguments.  The first argument
         is used if the "self promise" is fulfilled and the other is
@@ -715,7 +716,7 @@ class Promise(Generic[T]):
 
     @classmethod
     def resolve(cls, obj):
-        # type: (Any) -> Promise
+        # type: (T) -> Promise[T]
         if not cls.is_thenable(obj):
             ret = cls()  # type: Promise
             # ret._capture_stacktrace()
@@ -770,20 +771,20 @@ class Promise(Generic[T]):
 
     @classmethod
     def for_dict(cls, m):
-        # type: (Dict[Hashable, Promise]) -> Promise
+        # type: (Dict[Hashable, Promise[S]]) -> Promise[Dict[Hashable, S]]
         """
         A special function that takes a dictionary of promises
         and turns them into a promise for a dictionary of values.
         In other words, this turns an dictionary of promises for values
         into a promise for a dictionary of values.
         """
-        dict_type = type(m)
+        dict_type = type(m)  # type: Type[Dict]
 
         if not m:
             return cls.resolve(dict_type())
 
         def handle_success(resolved_values):
-            # type: (List[Any]) -> Dict[Hashable, Any]
+            # type: (List[S]) -> Dict[Hashable, S]
             return dict_type(zip(m.keys(), resolved_values))
 
         return cls.all(m.values()).then(handle_success)

@@ -2,7 +2,7 @@
 from collections import deque
 if False:
     from .promise import Promise
-    from typing import Callable, Optional, Union  # flake8: noqa
+    from typing import Any, Callable, Optional, Union  # flake8: noqa
 
 
 class Async(object):

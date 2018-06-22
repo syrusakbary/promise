@@ -4,7 +4,7 @@ from functools import partial
 from .promise import Promise, async_instance, get_default_scheduler
 if False:
     from typing import (
-        List, Sized, Callable, Optional, Tuple, Union, Iterator, Hashable
+        Any, List, Sized, Callable, Optional, Tuple, Union, Iterator, Hashable
     )  # flake8: noqa
 
 
@@ -198,7 +198,7 @@ class DataLoader(object):
 # ensuring that it always occurs after "PromiseJobs" ends.
 
 # Private: cached resolved Promise instance
-resolved_promise = None
+resolved_promise = None  # type: Optional[Promise[None]]
 
 
 def enqueue_post_promise_job(fn, scheduler):
@@ -208,8 +208,11 @@ def enqueue_post_promise_job(fn, scheduler):
         resolved_promise = Promise.resolve(None)
     if not scheduler:
         scheduler = get_default_scheduler()
-    resolved_promise.then(lambda v: async_instance.invoke(
-        fn, scheduler))
+
+    def on_promise_resolve(v):
+        async_instance.invoke(fn, scheduler)
+
+    resolved_promise.then(on_promise_resolve)
 
 
 def dispatch_queue(loader):
