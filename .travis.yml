@@ -20,5 +20,7 @@ matrix:
     script: flake8
   - python: '3.5'
     script: |
-      pip install pyre-check
-      pyre --source-directory promise check
+      # pip install pyre-check
+      # pyre --source-directory promise check
+      pip install mypy
+      mypy promise  --ignore-missing-imports

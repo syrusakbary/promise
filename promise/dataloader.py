@@ -210,9 +210,10 @@ def enqueue_post_promise_job(fn, scheduler):
         scheduler = get_default_scheduler()
 
     def on_promise_resolve(v):
+        # type: (Any) -> None
         async_instance.invoke(fn, scheduler)
 
-    resolved_promise.then(on_promise_resolve)
+    resolved_promise.then(on_promise_resolve)  # type: Promise[None]
 
 
 def dispatch_queue(loader):
