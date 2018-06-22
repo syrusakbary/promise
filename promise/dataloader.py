@@ -1,12 +1,15 @@
 from collections import Iterable, namedtuple
 from functools import partial
 
-from typing import List, Sized  # flake8: noqa
-
-from .promise import Promise, async_instance
+from .promise import Promise, async_instance, get_default_scheduler
+if False:
+    from typing import (
+        Any, List, Sized, Callable, Optional, Tuple, Union, Iterator, Hashable
+    )  # flake8: noqa
 
 
 def get_chunks(iterable_obj, chunk_size=1):
+    # type: (List[Loader], int) -> Iterator
     chunk_size = max(1, chunk_size)
     return (iterable_obj[i:i + chunk_size] for i in range(0, len(iterable_obj), chunk_size))
 
@@ -20,7 +23,16 @@ class DataLoader(object):
     max_batch_size = None  # type: int
     cache = True
 
-    def __init__(self, batch_load_fn=None, batch=None, max_batch_size=None, cache=None, get_cache_key=None, cache_map=None):
+    def __init__(self,
+                 batch_load_fn=None,  # type: Callable
+                 batch=None,  # type: Optional[Any]
+                 max_batch_size=None,  # type: Optional[int]
+                 cache=None,  # type: Optional[Any]
+                 get_cache_key=None,  # type: Optional[Any]
+                 cache_map=None,  # type: Optional[Any]
+                 scheduler=None,  # type: Optional[Any]
+                 ):
+        # type: (...) -> None
 
         if batch_load_fn is not None:
             self.batch_load_fn = batch_load_fn
@@ -45,11 +57,13 @@ class DataLoader(object):
 
         self._promise_cache = cache_map or {}
         self._queue = []  # type: List[Loader]
+        self._scheduler = scheduler
 
     def get_cache_key(self, key):  # type: ignore
         return key
 
     def load(self, key=None):
+        # type: (Hashable) -> Promise
         '''
         Loads a key, returning a `Promise` for the value represented by that key.
         '''
@@ -68,7 +82,8 @@ class DataLoader(object):
                 return cached_promise
 
         # Otherwise, produce a new Promise for this value.
-        promise = Promise(partial(self.do_resolve_reject, key))
+
+        promise = Promise(partial(self.do_resolve_reject, key))  # type: ignore
 
         # If caching, cache this promise.
         if self.cache:
@@ -77,6 +92,7 @@ class DataLoader(object):
         return promise
 
     def do_resolve_reject(self, key, resolve, reject):
+        # type: (Hashable, Callable, Callable) -> None
         # Enqueue this Promise to be dispatched.
         self._queue.append(Loader(
             key=key,
@@ -89,12 +105,14 @@ class DataLoader(object):
         if len(self._queue) == 1:
             if self.batch:
                 # If batching, schedule a task to dispatch the queue.
-                enqueue_post_promise_job(partial(dispatch_queue, self))
+                enqueue_post_promise_job(
+                    partial(dispatch_queue, self), self._scheduler)
             else:
                 # Otherwise dispatch the (queue of one) immediately.
                 dispatch_queue(self)
 
     def load_many(self, keys):
+        # type: (Iterable[Hashable]) -> Promise
         '''
         Loads multiple keys, promising an array of values
 
@@ -116,6 +134,7 @@ class DataLoader(object):
         return Promise.all([self.load(key) for key in keys])
 
     def clear(self, key):
+        # type: (Hashable) -> DataLoader
         '''
         Clears the value at `key` from the cache, if it exists. Returns itself for
         method chaining.
@@ -125,6 +144,7 @@ class DataLoader(object):
         return self
 
     def clear_all(self):
+        # type: () -> DataLoader
         '''
         Clears the entire cache. To be used when some event results in unknown
         invalidations across this particular `DataLoader`. Returns itself for
@@ -134,6 +154,7 @@ class DataLoader(object):
         return self
 
     def prime(self, key, value):
+        # type: (Hashable, Any) -> DataLoader
         '''
         Adds the provied key and value to the cache. If the key already exists, no
         change is made. Returns itself for method chaining.
@@ -177,16 +198,26 @@ class DataLoader(object):
 # ensuring that it always occurs after "PromiseJobs" ends.
 
 # Private: cached resolved Promise instance
-resolved_promise = None
+resolved_promise = None  # type: Optional[Promise[None]]
 
-def enqueue_post_promise_job(fn):
+
+def enqueue_post_promise_job(fn, scheduler):
+    # type: (Callable, Any) -> None
     global resolved_promise
     if not resolved_promise:
         resolved_promise = Promise.resolve(None)
-    resolved_promise.then(lambda v: async_instance.invoke(fn))
+    if not scheduler:
+        scheduler = get_default_scheduler()
+
+    def on_promise_resolve(v):
+        # type: (Any) -> None
+        async_instance.invoke(fn, scheduler)
+
+    resolved_promise.then(on_promise_resolve)  # type: Promise[None]
 
 
 def dispatch_queue(loader):
+    # type: (DataLoader) -> None
     '''
     Given the current state of a Loader instance, perform a batch load
     from its current queue.
@@ -211,6 +242,7 @@ def dispatch_queue(loader):
 
 
 def dispatch_queue_batch(loader, queue):
+    # type: (DataLoader, List[Loader]) -> None
     # Collect all keys to be loaded in this dispatch
     keys = [l.key for l in queue]
 
@@ -218,15 +250,16 @@ def dispatch_queue_batch(loader, queue):
     try:
         batch_promise = loader.batch_load_fn(keys)
     except Exception as e:
-        return failed_dispatch(
+        failed_dispatch(
             loader,
             queue,
             e
         )
+        return None
 
     # Assert the expected response from batch_load_fn
     if not batch_promise or not isinstance(batch_promise, Promise):
-        return failed_dispatch(
+        failed_dispatch(
             loader,
             queue,
             TypeError((
@@ -235,6 +268,7 @@ def dispatch_queue_batch(loader, queue):
                 'not return a Promise: {}.'
             ).format(batch_promise))
         )
+        return None
 
     def batch_promise_resolved(values):
         # type: (Sized) -> None
@@ -264,10 +298,12 @@ def dispatch_queue_batch(loader, queue):
             else:
                 l.resolve(value)
 
-    batch_promise.then(batch_promise_resolved).catch(partial(failed_dispatch, loader, queue))
+    batch_promise.then(batch_promise_resolved).catch(
+        partial(failed_dispatch, loader, queue))
 
 
 def failed_dispatch(loader, queue, error):
+    # type: (DataLoader, Iterable[Loader], Exception) -> None
     '''
     Do not cache individual loads if the entire batch dispatch fails,
     but still reject each request so they do not hang.

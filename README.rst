@@ -180,6 +180,26 @@ You can also run the benchmarks with:
 
     py.test tests --benchmark-only
 
+Static type checking
+--------------------
+
+Python type annotations are very useful for making sure we use the
+libary the way is intended.
+
+You can run ``mypy`` static type checker:
+
+.. code:: sh
+
+    pip install mypy
+    mypy promise  --ignore-missing-imports
+
+Or ``pyre``:
+
+.. code:: sh
+
+    pip install pyre-check
+    pyre --source-directory promise check
+
 Notes
 =====
 
