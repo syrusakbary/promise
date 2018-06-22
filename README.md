@@ -133,28 +133,18 @@ You can also run the benchmarks with:
 py.test tests --benchmark-only
 ```
 
-## Generate Annotations
+## Static type checking
 
-Python typing annotations are very useful for making sure we use the libary the way is intended.
+Python type annotations are very useful for making sure we use the libary the way is intended.
 
-You can autogenerate the types with:
-
-```sh
-pip install pyannotate
-py.test tests
-pyannotate -w # This will replace the files
-```
-
-And then, run the static type checker
-
-With `mypy`
+You can run `mypy` static type checker:
 
 ```sh
 pip install mypy
 mypy promise  --ignore-missing-imports
 ```
 
-with `pyre`:
+Or `pyre`:
 
 ```sh
 pip install pyre-check
