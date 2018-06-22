@@ -1,17 +1,25 @@
 from threading import Event
+from typing import Callable
+from typing import Any
+from typing import Optional
+if False:
+    from ..promise import Promise
 
 
 class ImmediateScheduler(object):
     def call(self, fn):
+        # type: (Callable) -> None
         try:
             fn()
         except:
             pass
 
     def wait(self, promise, timeout=None):
+        # type: (Promise, Optional[float]) -> None
         e = Event()
 
         def on_resolve_or_reject(_):
+            # type: (Any) -> None
             e.set()
 
         promise._then(on_resolve_or_reject, on_resolve_or_reject)

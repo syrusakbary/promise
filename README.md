@@ -20,10 +20,9 @@ Its fully compatible with the [Promises/A+ spec](http://promises-aplus.github.io
 
     $ pip install promise
 
-
 ## Usage
 
-The example below shows how you can load the promise library.  It then demonstrates creating a promise from scratch.  You simply call `Promise(fn)`.  There is a complete specification for what is returned by this method in [Promises/A+](http://promises-aplus.github.com/promises-spec/).
+The example below shows how you can load the promise library. It then demonstrates creating a promise from scratch. You simply call `Promise(fn)`. There is a complete specification for what is returned by this method in [Promises/A+](http://promises-aplus.github.com/promises-spec/).
 
 ```python
 from promise import Promise
@@ -43,18 +42,18 @@ from promise import Promise
 
 ### Promise(resolver)
 
-This creates and returns a new promise.  `resolver` must be a function.  The `resolver` function is passed two arguments:
+This creates and returns a new promise. `resolver` must be a function. The `resolver` function is passed two arguments:
 
- 1. `resolve` should be called with a single argument.  If it is called with a non-promise value then the promise is fulfilled with that value.  If it is called with a promise (A) then the returned promise takes on the state of that new promise (A).
- 2. `reject` should be called with a single argument.  The returned promise will be rejected with that argument.
+1.  `resolve` should be called with a single argument. If it is called with a non-promise value then the promise is fulfilled with that value. If it is called with a promise (A) then the returned promise takes on the state of that new promise (A).
+2.  `reject` should be called with a single argument. The returned promise will be rejected with that argument.
 
 ### Class Methods
 
-  These methods are invoked by calling `Promise.methodName`.
+These methods are invoked by calling `Promise.methodName`.
 
 #### Promise.resolve(value)
 
-Converts values and foreign promises into Promises/A+ promises.  If you pass it a value then it returns a Promise for that value.  If you pass it something that is close to a promise (such as a jQuery attempt at a promise) it returns a Promise that takes on the state of `value` (rejected or fulfilled).
+Converts values and foreign promises into Promises/A+ promises. If you pass it a value then it returns a Promise for that value. If you pass it something that is close to a promise (such as a jQuery attempt at a promise) it returns a Promise that takes on the state of `value` (rejected or fulfilled).
 
 #### Promise.reject(value)
 
@@ -62,7 +61,7 @@ Returns a rejected promise with the given value.
 
 #### Promise.all(list)
 
-Returns a promise for a list.  If it is called with a single argument then this returns a promise for a copy of that list with any promises replaced by their fulfilled values.  e.g.
+Returns a promise for a list. If it is called with a single argument then this returns a promise for a copy of that list with any promises replaced by their fulfilled values. e.g.
 
 ```python
 p = Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')]) \
@@ -77,24 +76,20 @@ This function wraps the `obj` act as a `Promise` if possible.
 Python `Future`s are supported, with a callback to `promise.done` when resolved.
 Have the same effects as `Promise.resolve(obj)`.
 
-
 #### Promise.for_dict(d)
 
 A special function that takes a dictionary of promises and turns them
-into a promise for a dictionary of values.  In other words, this turns
+into a promise for a dictionary of values. In other words, this turns
 an dictionary of promises for values into a promise for a dictionary
 of values.
-
 
 #### Promise.is_thenable(obj)
 
 This function checks if the `obj` is a `Promise`, or could be `cast`ed.
 
-
 #### Promise.promisify(func)
 
 This function wraps the result of calling `func` in a `Promise` instance.
-
 
 ### Instance Methods
 
@@ -102,13 +97,13 @@ These methods are invoked on a promise instance by calling `myPromise.methodName
 
 ### promise.then(did_fulfill, did_reject)
 
-This method follows the [Promises/A+ spec](http://promises-aplus.github.io/promises-spec/).  It explains things very clearly so I recommend you read it.
+This method follows the [Promises/A+ spec](http://promises-aplus.github.io/promises-spec/). It explains things very clearly so I recommend you read it.
 
-Either `did_fulfill` or `did_reject` will be called and they will not be called more than once.  They will be passed a single argument and will always be called asynchronously (in the next turn of the event loop).
+Either `did_fulfill` or `did_reject` will be called and they will not be called more than once. They will be passed a single argument and will always be called asynchronously (in the next turn of the event loop).
 
-If the promise is fulfilled then `did_fulfill` is called.  If the promise is rejected then `did_reject` is called.
+If the promise is fulfilled then `did_fulfill` is called. If the promise is rejected then `did_reject` is called.
 
-The call to `.then` also returns a promise.  If the handler that is called returns a promise, the promise returned by `.then` takes on the state of that returned promise.  If the handler that is called returns a value that is not a promise, the promise returned by `.then` will be fulfilled with that value. If the handler that is called throws an exception then the promise returned by `.then` is rejected with that exception.
+The call to `.then` also returns a promise. If the handler that is called returns a promise, the promise returned by `.then` takes on the state of that returned promise. If the handler that is called returns a value that is not a promise, the promise returned by `.then` will be fulfilled with that value. If the handler that is called throws an exception then the promise returned by `.then` is rejected with that exception.
 
 #### promise.catch(did_reject)
 
@@ -117,7 +112,6 @@ Sugar for `promise.then(None, did_reject)`, to mirror `catch` in synchronous cod
 #### promise.done(did_fulfill, did_reject)
 
 The same semantics as `.then` except that it does not return a promise and any exceptions are re-thrown so that they can be logged (crashing the application in non-browser environments)
-
 
 # Contributing
 
@@ -139,6 +133,33 @@ You can also run the benchmarks with:
 py.test tests --benchmark-only
 ```
 
+## Generate Annotations
+
+Python typing annotations are very useful for making sure we use the libary the way is intended.
+
+You can autogenerate the types with:
+
+```sh
+pip install pyannotate
+py.test tests
+pyannotate -w # This will replace the files
+```
+
+And then, run the static type checker
+
+With `mypy`
+
+```sh
+pip install mypy
+mypy promise
+```
+
+with `pyre`:
+
+```sh
+pip install pyre-check
+pyre --source-directory promise check
+```
 
 # Notes
 
