@@ -1,17 +1,11 @@
 from collections import Iterable, namedtuple
 from functools import partial
 
-from typing import List, Sized  # flake8: noqa
-
 from .promise import Promise, async_instance, get_default_scheduler
-from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import Tuple
-from typing import Union
-from typing import Iterator
-from typing import Iterable
-from typing import Hashable
+if False:
+    from typing import (
+        List, Sized, Callable, Optional, Tuple, Union, Iterator, Hashable
+    )  # flake8: noqa
 
 
 def get_chunks(iterable_obj, chunk_size=1):

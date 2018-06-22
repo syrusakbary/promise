@@ -1,9 +1,9 @@
 from functools import partial
 from collections import Iterable
-from typing import (Any, Optional, Tuple, Union, List,
-                    Type, Collection)  # flake8: noqa
 if False:
     from .promise import Promise
+    from typing import (Any, Optional, Tuple, Union, List,
+                        Type, Collection)  # flake8: noqa
 
 
 class PromiseList(object):

@@ -1,8 +1,7 @@
 # flake8: noqa
-from typing import Iterator
-
 if False:
     from .promise import Promise
+    from typing import Iterator
 
 
 def iterate_promise(promise):

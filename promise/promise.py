@@ -5,18 +5,20 @@ from threading import RLock
 from types import TracebackType
 
 from six import reraise  # type: ignore
-from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
-                    Tuple, Union, TypeVar, Generic, Hashable)
-
 from .async_ import Async
 from .compat import (Future, ensure_future, iscoroutine,  # type: ignore
                      iterate_promise)  # type: ignore
 from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
 from .promise_list import PromiseList
 from .schedulers.immediate import ImmediateScheduler
+from typing import TypeVar, Generic
 # from .schedulers.gevent import GeventScheduler
 # from .schedulers.asyncio import AsyncioScheduler
 # from .schedulers.thread import ThreadScheduler
+
+if False:
+    from typing import (List, Any, Callable, Dict, Iterator, Optional,  # flake8: noqa
+                        Tuple, Union, Generic, Hashable)
 
 
 default_scheduler = ImmediateScheduler()
