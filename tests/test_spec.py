@@ -338,6 +338,7 @@ def test_3_2_6_3_when_fulfilled():
 
     p1 = Promise()
     pending = Promise()
+
     def p1_resolved(v):
         return pending
 
@@ -558,25 +559,26 @@ def test_promise_follows_indifentely():
     a = Promise.resolve(None)
     b = a.then(lambda x: Promise.resolve("X"))
     e = Event()
+
     def b_then(v):
 
         c = Promise.resolve(None)
-        d = c.then(lambda v:Promise.resolve('B'))
+        d = c.then(lambda v: Promise.resolve("B"))
         return d
 
-    promise = b.then(
-        b_then
-    )
+    promise = b.then(b_then)
 
-    assert promise.get() == 'B'
+    assert promise.get() == "B"
 
 
 def test_promise_all_follows_indifentely():
-    promises = Promise.all([
-        Promise.resolve('A'),
-        Promise.resolve(None).then(Promise.resolve).then(
-            lambda v: Promise.resolve(None).then(lambda v:Promise.resolve('B'))
-        )
-    ])
+    promises = Promise.all(
+        [
+            Promise.resolve("A"),
+            Promise.resolve(None)
+            .then(Promise.resolve)
+            .then(lambda v: Promise.resolve(None).then(lambda v: Promise.resolve("B"))),
+        ]
+    )
 
-    assert promises.get() == ['A', 'B']
+    assert promises.get() == ["A", "B"]

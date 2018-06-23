@@ -1,12 +1,12 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
 from collections import deque
+
 if False:
     from .promise import Promise
     from typing import Any, Callable, Optional, Union  # flake8: noqa
 
 
 class Async(object):
-
     def __init__(self, trampoline_enabled=True):
         self.is_tick_used = False
         self.late_queue = deque()  # type: ignore
@@ -48,18 +48,14 @@ class Async(object):
         if self.trampoline_enabled:
             self._async_invoke(fn, scheduler)
         else:
-            scheduler.call(
-                fn
-            )
+            scheduler.call(fn)
 
     def settle_promises(self, promise):
         # type: (Promise) -> None
         if self.trampoline_enabled:
             self._async_settle_promise(promise)
         else:
-            promise.scheduler.call(
-                promise._settle_promises
-            )
+            promise.scheduler.call(promise._settle_promises)
 
     def throw_later(self, reason, scheduler):
         # type: (Exception, Any) -> None
@@ -74,9 +70,10 @@ class Async(object):
     def drain_queue(self, queue):
         # type: (deque) -> None
         from .promise import Promise
+
         while queue:
             fn = queue.popleft()
-            if (isinstance(fn, Promise)):
+            if isinstance(fn, Promise):
                 fn._settle_promises()
                 continue
             fn()
@@ -84,12 +81,13 @@ class Async(object):
     def drain_queue_until_resolved(self, promise):
         # type: (Promise) -> None
         from .promise import Promise
+
         queue = self.normal_queue
         while queue:
             if not promise.is_pending:
                 return
             fn = queue.popleft()
-            if (isinstance(fn, Promise)):
+            if isinstance(fn, Promise):
                 fn._settle_promises()
                 continue
             fn()

@@ -1,15 +1,22 @@
 from functools import partial
 from collections import Iterable
+
 if False:
     from .promise import Promise
-    from typing import (Any, Optional, Tuple, Union, List,
-                        Type, Collection)  # flake8: noqa
+    from typing import (
+        Any,
+        Optional,
+        Tuple,
+        Union,
+        List,
+        Type,
+        Collection,
+    )  # flake8: noqa
 
 
 class PromiseList(object):
 
-    __slots__ = ('_values', '_length', '_total_resolved',
-                 'promise', '_promise_class')
+    __slots__ = ("_values", "_length", "_total_resolved", "promise", "_promise_class")
 
     def __init__(self, values, promise_class):
         # type: (Union[Collection, Promise[Collection]], Type[Promise]) -> None
@@ -22,7 +29,8 @@ class PromiseList(object):
         Promise = self._promise_class
         if Promise.is_thenable(values):
             values_as_promise = Promise._try_convert_to_promise(
-                values)._target()  # type: ignore
+                values
+            )._target()  # type: ignore
             self._init_promise(values_as_promise)
         else:
             self._init(values)  # type: ignore
@@ -40,10 +48,7 @@ class PromiseList(object):
             return
 
         self.promise._is_async_guaranteed = True
-        values._then(
-            self._init,
-            self._reject,
-        )
+        values._then(self._init, self._reject)
         return
 
     def _init(self, values):
@@ -51,7 +56,8 @@ class PromiseList(object):
         self._values = values
         if not isinstance(values, Iterable):
             err = Exception(
-                "PromiseList requires an iterable. Received {}.".format(repr(values)))
+                "PromiseList requires an iterable. Received {}.".format(repr(values))
+            )
             self.promise._reject_callback(err, False)
             return
 
@@ -82,15 +88,13 @@ class PromiseList(object):
                     maybe_promise._add_callbacks(
                         partial(self._promise_fulfilled, i=i),
                         self._promise_rejected,
-                        None
+                        None,
                     )
                     self._values[i] = maybe_promise
                 elif maybe_promise.is_fulfilled:
-                    is_resolved = self._promise_fulfilled(
-                        maybe_promise._value(), i)
+                    is_resolved = self._promise_fulfilled(maybe_promise._value(), i)
                 elif maybe_promise.is_rejected:
-                    is_resolved = self._promise_rejected(
-                        maybe_promise._reason())
+                    is_resolved = self._promise_rejected(maybe_promise._reason())
 
             else:
                 is_resolved = self._promise_fulfilled(val, i)

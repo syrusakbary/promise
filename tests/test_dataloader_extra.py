@@ -4,11 +4,11 @@
 
 # def id_loader(**options):
 #     load_calls = []
-    
+
 #     def fn(keys):
 #         load_calls.append(keys)
 #         return Promise.resolve(keys)
-    
+
 #     identity_loader = DataLoader(fn, **options)
 #     return identity_loader, load_calls
 

@@ -10,7 +10,7 @@ except NameError:
     __SETUP__ = False
 
 
-VERSION = (2, 1, 0, 'final', 0)
+VERSION = (2, 1, 0, "final", 0)
 
 __version__ = get_version(VERSION)
 
@@ -22,17 +22,17 @@ if not __SETUP__:
         is_thenable,
         async_instance,
         get_default_scheduler,
-        set_default_scheduler
+        set_default_scheduler,
     )
     from .schedulers.immediate import ImmediateScheduler
 
     __all__ = [
-        'Promise',
-        'promise_for_dict',
-        'promisify',
-        'is_thenable',
-        'async_instance',
-        'get_default_scheduler',
-        'set_default_scheduler',
-        'ImmediateScheduler'
+        "Promise",
+        "promise_for_dict",
+        "promisify",
+        "is_thenable",
+        "async_instance",
+        "get_default_scheduler",
+        "set_default_scheduler",
+        "ImmediateScheduler",
     ]

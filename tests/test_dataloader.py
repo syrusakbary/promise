@@ -7,7 +7,7 @@ from promise.dataloader import DataLoader
 def id_loader(**options):
     load_calls = []
 
-    resolve = options.pop('resolve', Promise.resolve)
+    resolve = options.pop("resolve", Promise.resolve)
 
     def fn(keys):
         load_calls.append(keys)
@@ -20,6 +20,7 @@ def id_loader(**options):
 def test_build_a_simple_data_loader():
     def call_fn(keys):
         return Promise.resolve(keys)
+
     identity_loader = DataLoader(call_fn)
 
     promise1 = identity_loader.load(1)
@@ -32,6 +33,7 @@ def test_build_a_simple_data_loader():
 def test_supports_loading_multiple_keys_in_one_call():
     def call_fn(keys):
         return Promise.resolve(keys)
+
     identity_loader = DataLoader(call_fn)
 
     promise_all = identity_loader.load_many([1, 2])
@@ -115,37 +117,35 @@ def test_caches_repeated_requests():
     def do():
         identity_loader, load_calls = id_loader()
 
-        a, b = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B')
-        ]).get()
+        a, b = Promise.all([identity_loader.load("A"), identity_loader.load("B")]).get()
 
-        assert a == 'A'
-        assert b == 'B'
+        assert a == "A"
+        assert b == "B"
 
-        assert load_calls == [['A', 'B']]
+        assert load_calls == [["A", "B"]]
 
-        a2, c = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('C')
-        ]).get()
+        a2, c = Promise.all(
+            [identity_loader.load("A"), identity_loader.load("C")]
+        ).get()
 
-        assert a2 == 'A'
-        assert c == 'C'
+        assert a2 == "A"
+        assert c == "C"
 
-        assert load_calls == [['A', 'B'], ['C']]
+        assert load_calls == [["A", "B"], ["C"]]
 
-        a3, b2, c2 = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B'),
-            identity_loader.load('C')
-        ]).get()
+        a3, b2, c2 = Promise.all(
+            [
+                identity_loader.load("A"),
+                identity_loader.load("B"),
+                identity_loader.load("C"),
+            ]
+        ).get()
 
-        assert a3 == 'A'
-        assert b2 == 'B'
-        assert c2 == 'C'
+        assert a3 == "A"
+        assert b2 == "B"
+        assert c2 == "C"
 
-        assert load_calls == [['A', 'B'], ['C']]
+        assert load_calls == [["A", "B"], ["C"]]
 
     do().get()
 
@@ -155,27 +155,23 @@ def test_clears_single_value_in_loader():
     def do():
         identity_loader, load_calls = id_loader()
 
-        a, b = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B')
-        ]).get()
+        a, b = Promise.all([identity_loader.load("A"), identity_loader.load("B")]).get()
 
-        assert a == 'A'
-        assert b == 'B'
+        assert a == "A"
+        assert b == "B"
 
-        assert load_calls == [['A', 'B']]
+        assert load_calls == [["A", "B"]]
 
-        identity_loader.clear('A')
+        identity_loader.clear("A")
 
-        a2, b2 = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B')
-        ]).get()
+        a2, b2 = Promise.all(
+            [identity_loader.load("A"), identity_loader.load("B")]
+        ).get()
 
-        assert a2 == 'A'
-        assert b2 == 'B'
+        assert a2 == "A"
+        assert b2 == "B"
 
-        assert load_calls == [['A', 'B'], ['A']]
+        assert load_calls == [["A", "B"], ["A"]]
 
     do().get()
 
@@ -185,27 +181,23 @@ def test_clears_all_values_in_loader():
     def do():
         identity_loader, load_calls = id_loader()
 
-        a, b = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B')
-        ]).get()
+        a, b = Promise.all([identity_loader.load("A"), identity_loader.load("B")]).get()
 
-        assert a == 'A'
-        assert b == 'B'
+        assert a == "A"
+        assert b == "B"
 
-        assert load_calls == [['A', 'B']]
+        assert load_calls == [["A", "B"]]
 
         identity_loader.clear_all()
 
-        a2, b2 = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B')
-        ]).get()
+        a2, b2 = Promise.all(
+            [identity_loader.load("A"), identity_loader.load("B")]
+        ).get()
 
-        assert a2 == 'A'
-        assert b2 == 'B'
+        assert a2 == "A"
+        assert b2 == "B"
 
-        assert load_calls == [['A', 'B'], ['A', 'B']]
+        assert load_calls == [["A", "B"], ["A", "B"]]
 
     do().get()
 
@@ -215,17 +207,14 @@ def test_allows_priming_the_cache():
     def do():
         identity_loader, load_calls = id_loader()
 
-        identity_loader.prime('A', 'A')
+        identity_loader.prime("A", "A")
 
-        a, b = Promise.all([
-            identity_loader.load('A'),
-            identity_loader.load('B')
-        ]).get()
+        a, b = Promise.all([identity_loader.load("A"), identity_loader.load("B")]).get()
 
-        assert a == 'A'
-        assert b == 'B'
+        assert a == "A"
+        assert b == "B"
 
-        assert load_calls == [['B']]
+        assert load_calls == [["B"]]
 
     do().get()
 
@@ -235,29 +224,30 @@ def test_does_not_prime_keys_that_already_exist():
     def do():
         identity_loader, load_calls = id_loader()
 
-        identity_loader.prime('A', 'X')
+        identity_loader.prime("A", "X")
 
-        a1 = identity_loader.load('A').get()
-        b1 = identity_loader.load('B').get()
+        a1 = identity_loader.load("A").get()
+        b1 = identity_loader.load("B").get()
 
-        assert a1 == 'X'
-        assert b1 == 'B'
+        assert a1 == "X"
+        assert b1 == "B"
 
-        identity_loader.prime('A', 'Y')
-        identity_loader.prime('B', 'Y')
+        identity_loader.prime("A", "Y")
+        identity_loader.prime("B", "Y")
 
-        a2 = identity_loader.load('A').get()
-        b2 = identity_loader.load('B').get()
+        a2 = identity_loader.load("A").get()
+        b2 = identity_loader.load("B").get()
 
-        assert a2 == 'X'
-        assert b2 == 'B'
+        assert a2 == "X"
+        assert b2 == "B"
 
-        assert load_calls == [['B']]
+        assert load_calls == [["B"]]
 
     do().get()
 
 
 # Represents Errors
+
 
 def test_resolves_to_error_to_indicate_failure():
     @Promise.safe
@@ -267,9 +257,8 @@ def test_resolves_to_error_to_indicate_failure():
                 key if key % 2 == 0 else Exception("Odd: {}".format(key))
                 for key in keys
             ]
-            return Promise.resolve(
-                mapped_keys
-            )
+            return Promise.resolve(mapped_keys)
+
         even_loader, load_calls = id_loader(resolve=resolve)
 
         with raises(Exception) as exc_info:
@@ -292,9 +281,8 @@ def test_can_represent_failures_and_successes_simultaneously():
                 key if key % 2 == 0 else Exception("Odd: {}".format(key))
                 for key in keys
             ]
-            return Promise.resolve(
-                mapped_keys
-            )
+            return Promise.resolve(mapped_keys)
+
         even_loader, load_calls = id_loader(resolve=resolve)
 
         promise1 = even_loader.load(1)
@@ -315,13 +303,9 @@ def test_caches_failed_fetches():
     @Promise.safe
     def do():
         def resolve(keys):
-            mapped_keys = [
-                Exception("Error: {}".format(key))
-                for key in keys
-            ]
-            return Promise.resolve(
-                mapped_keys
-            )
+            mapped_keys = [Exception("Error: {}".format(key)) for key in keys]
+            return Promise.resolve(mapped_keys)
+
         error_loader, load_calls = id_loader(resolve=resolve)
 
         with raises(Exception) as exc_info:
@@ -381,7 +365,7 @@ def test_catches_error_if_loader_resolver_fails():
         a_loader, a_load_calls = id_loader(resolve=do_resolve)
 
         with raises(Exception) as exc_info:
-            a_loader.load('A1').get()
+            a_loader.load("A1").get()
 
         assert str(exc_info.value) == "AOH!"
 
@@ -392,24 +376,30 @@ def test_can_call_a_loader_from_a_loader():
     @Promise.safe
     def do():
         deep_loader, deep_load_calls = id_loader()
-        a_loader, a_load_calls = id_loader(resolve=lambda keys:deep_loader.load(tuple(keys)))
-        b_loader, b_load_calls = id_loader(resolve=lambda keys:deep_loader.load(tuple(keys)))
+        a_loader, a_load_calls = id_loader(
+            resolve=lambda keys: deep_loader.load(tuple(keys))
+        )
+        b_loader, b_load_calls = id_loader(
+            resolve=lambda keys: deep_loader.load(tuple(keys))
+        )
 
-        a1, b1, a2, b2 = Promise.all([
-            a_loader.load('A1'),
-            b_loader.load('B1'),
-            a_loader.load('A2'),
-            b_loader.load('B2')
-        ]).get()
+        a1, b1, a2, b2 = Promise.all(
+            [
+                a_loader.load("A1"),
+                b_loader.load("B1"),
+                a_loader.load("A2"),
+                b_loader.load("B2"),
+            ]
+        ).get()
 
-        assert a1 == 'A1'
-        assert b1 == 'B1'
-        assert a2 == 'A2'
-        assert b2 == 'B2'
+        assert a1 == "A1"
+        assert b1 == "B1"
+        assert a2 == "A2"
+        assert b2 == "B2"
 
-        assert a_load_calls == [['A1', 'A2']]
-        assert b_load_calls == [['B1', 'B2']]
-        assert deep_load_calls == [[('A1', 'A2'), ('B1', 'B2')]]
+        assert a_load_calls == [["A1", "A2"]]
+        assert b_load_calls == [["B1", "B2"]]
+        assert deep_load_calls == [[("A1", "A2"), ("B1", "B2")]]
 
     do().get()
 
@@ -421,7 +411,7 @@ def test_dataloader_clear_with_missing_key_works():
             return x
 
         a_loader, a_load_calls = id_loader(resolve=do_resolve)
-        assert a_loader.clear('A1') == a_loader
+        assert a_loader.clear("A1") == a_loader
 
     do().get()
 
@@ -435,10 +425,10 @@ def test_wrong_loader_return_type_does_not_block_async_instance():
         a_loader, a_load_calls = id_loader(resolve=do_resolve)
 
         with raises(Exception):
-            a_loader.load('A1').get()
+            a_loader.load("A1").get()
         assert async_instance.have_drained_queues
         with raises(Exception):
-            a_loader.load('A2').get()
+            a_loader.load("A2").get()
         assert async_instance.have_drained_queues
 
     do().get()

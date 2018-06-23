@@ -8,7 +8,8 @@ from promise import (
     Promise,
     is_thenable,
     promisify,
-    promise_for_dict as free_promise_for_dict, )
+    promise_for_dict as free_promise_for_dict,
+)
 from concurrent.futures import Future
 from threading import Thread
 
@@ -39,7 +40,7 @@ class DelayedRejection(Thread):
         self.promise.do_reject(self.reason)
 
 
-class FakeThenPromise():
+class FakeThenPromise:
     def __init__(self, raises=True):
         self.raises = raises
 
@@ -108,7 +109,7 @@ def test_thrown_exceptions_have_stacktrace():
     def throws(v):
         assert False
 
-    p3 = Promise.resolve('a').then(throws)
+    p3 = Promise.resolve("a").then(throws)
     with raises(AssertionError) as assert_exc:
         p3.get()
 
@@ -122,7 +123,7 @@ def test_thrown_exceptions_preserve_stacktrace():
     def after_throws(v):
         pass
 
-    p3 = Promise.resolve('a').then(throws).then(after_throws)
+    p3 = Promise.resolve("a").then(throws).then(after_throws)
     with raises(AssertionError) as assert_exc:
         p3.get()
 
@@ -273,10 +274,7 @@ def test_promise_all_if():
 
 
 # promise_for_dict
-@fixture(params=[
-    Promise.for_dict,
-    free_promise_for_dict,
-])
+@fixture(params=[Promise.for_dict, free_promise_for_dict])
 def promise_for_dict(request):
     return request.param
 
@@ -344,6 +342,7 @@ def test_dict_promise_if(promise_for_dict):
 def test_done():
     counter = [0]
     r = Promise()
+
     def inc(_):
         counter[0] += 1
 
@@ -358,7 +357,7 @@ def test_done():
     p.done(inc, dec)
     p.done(end)
     p.do_resolve(4)
-    
+
     Promise.wait(r)
     assert counter[0] == 2
 
@@ -388,15 +387,14 @@ def test_done_all():
     r = Promise()
     p.done_all()
     p.done_all([(inc, dec)])
-    p.done_all([
-        (inc, dec),
-        (inc, dec),
-        {
-            'success': inc,
-            'failure': dec
-        },
-        lambda _: r.do_resolve(None)
-    ])
+    p.done_all(
+        [
+            (inc, dec),
+            (inc, dec),
+            {"success": inc, "failure": dec},
+            lambda _: r.do_resolve(None),
+        ]
+    )
     p.do_resolve(4)
     Promise.wait(r)
     assert counter[0] == 4
@@ -406,14 +404,13 @@ def test_done_all():
     p.done_all()
     p.done_all([inc])
     p.done_all([(inc, dec)])
-    p.done_all([
-        (inc, dec),
-        {
-            'success': inc,
-            'failure': dec
-        },
-        (None, lambda _: r.do_resolve(None))
-    ])
+    p.done_all(
+        [
+            (inc, dec),
+            {"success": inc, "failure": dec},
+            (None, lambda _: r.do_resolve(None)),
+        ]
+    )
     p.do_reject(Exception("Uh oh!"))
     Promise.wait(r)
     assert counter[0] == 1
@@ -424,14 +421,15 @@ def test_then_all():
 
     handlers = [
         ((lambda x: x * x), (lambda r: 1)),
-        {
-            'success': (lambda x: x + x),
-            'failure': (lambda r: 2)
-        },
+        {"success": (lambda x: x + x), "failure": (lambda r: 2)},
     ]
 
-    results = p.then_all() + p.then_all([lambda x: x]) + p.then_all(
-        [(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
+    results = (
+        p.then_all()
+        + p.then_all([lambda x: x])
+        + p.then_all([(lambda x: x * x, lambda r: 1)])
+        + p.then_all(handlers)
+    )
 
     p.do_resolve(4)
 
@@ -441,14 +439,14 @@ def test_then_all():
 
     handlers = [
         ((lambda x: x * x), (lambda r: 1)),
-        {
-            'success': (lambda x: x + x),
-            'failure': (lambda r: 2)
-        },
+        {"success": (lambda x: x + x), "failure": (lambda r: 2)},
     ]
 
-    results = p.then_all() + p.then_all(
-        [(lambda x: x * x, lambda r: 1)]) + p.then_all(handlers)
+    results = (
+        p.then_all()
+        + p.then_all([(lambda x: x * x, lambda r: 1)])
+        + p.then_all(handlers)
+    )
 
     p.do_reject(Exception())
 
@@ -463,18 +461,16 @@ def test_do_resolve():
 
 def test_do_resolve_fail_on_call():
     def raises(resolve, reject):
-        raise Exception('Fails')
+        raise Exception("Fails")
 
     p1 = Promise(raises)
     assert not p1.is_fulfilled
-    assert str(p1.reason) == 'Fails'
+    assert str(p1.reason) == "Fails"
 
 
 def test_catch():
     p1 = Promise(lambda resolve, reject: resolve(0))
-    p2 = p1.then(lambda value: 1 / value) \
-           .catch(lambda e: e) \
-           .then(lambda e: type(e))
+    p2 = p1.then(lambda value: 1 / value).catch(lambda e: e).then(lambda e: type(e))
     assert p2.get() == ZeroDivisionError
     assert p2.is_fulfilled
 
@@ -527,9 +523,9 @@ def test_resolve_future_rejected(resolve):
     future = Future()
     promise = resolve(future)
     assert promise.is_pending
-    future.set_exception(Exception('Future rejected'))
+    future.set_exception(Exception("Future rejected"))
     assert promise.is_rejected
-    assert_exception(promise.reason, Exception, 'Future rejected')
+    assert_exception(promise.reason, Exception, "Future rejected")
 
 
 def test_resolve_object(resolve):
@@ -557,29 +553,35 @@ def test_promise_repr_pending():
 
 
 def test_promise_repr_pending():
-    val = {1:2}
+    val = {1: 2}
     promise = Promise.fulfilled(val)
     promise._wait()
-    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(hex(id(promise)), repr(val))
+    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(
+        hex(id(promise)), repr(val)
+    )
 
 
 def test_promise_repr_fulfilled():
-    val = {1:2}
+    val = {1: 2}
     promise = Promise.fulfilled(val)
     promise._wait()
-    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(hex(id(promise)), repr(val))
+    assert repr(promise) == "<Promise at {} fulfilled with {}>".format(
+        hex(id(promise)), repr(val)
+    )
 
 
 def test_promise_repr_rejected():
     err = Exception("Error!")
     promise = Promise.rejected(err)
     promise._wait()
-    assert repr(promise) == "<Promise at {} rejected with {}>".format(hex(id(promise)), repr(err))
+    assert repr(promise) == "<Promise at {} rejected with {}>".format(
+        hex(id(promise)), repr(err)
+    )
 
 
 def test_promise_loop():
     def by_two(result):
-        return result*2
+        return result * 2
 
     def executor(resolve, reject):
         resolve(Promise.resolve(1).then(lambda v: Promise.resolve(v).then(by_two)))
@@ -637,7 +639,9 @@ def test_promisify_function_rejected(resolve):
 def test_promises_with_only_then():
     context = {"success": False}
     error = RuntimeError("Ooops!")
-    promise1 = Promise(lambda resolve, reject: context.update({"promise1_reject": reject}))
+    promise1 = Promise(
+        lambda resolve, reject: context.update({"promise1_reject": reject})
+    )
     promise2 = promise1.then(lambda x: None)
     promise3 = promise1.then(lambda x: None)
     context["promise1_reject"](error)
@@ -652,6 +656,7 @@ def test_promises_promisify_still_works_but_deprecated_for_non_callables():
     x = promisify(1)
     assert isinstance(x, Promise)
     assert x.get() == 1
+
 
 # def test_promise_loop():
 #     values = Promise.resolve([1, None, 2])
