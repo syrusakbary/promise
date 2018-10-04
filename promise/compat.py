@@ -7,7 +7,7 @@ except ImportError:
 
 
 try:
-    from asyncio import Future, iscoroutine, ensure_future  # type: ignore
+    from asyncio import Future, ensure_future  # type: ignore
 except ImportError:
 
     class Future:  # type: ignore
