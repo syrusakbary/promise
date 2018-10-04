@@ -1,4 +1,12 @@
 try:
+    from inspect import iscoroutine
+except ImportError:
+
+    def iscoroutine(obj):  # type: ignore
+        return False
+
+
+try:
     from asyncio import Future, iscoroutine, ensure_future  # type: ignore
 except ImportError:
 
@@ -14,9 +22,6 @@ except ImportError:
 
     def ensure_future():  # type: ignore
         raise Exception("ensure_future needs asyncio for executing")
-
-    def iscoroutine(obj):  # type: ignore
-        return False
 
 
 try:
