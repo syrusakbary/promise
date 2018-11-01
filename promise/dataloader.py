@@ -1,4 +1,8 @@
-from collections import Iterable, namedtuple
+from collections import namedtuple
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 from functools import partial
 
 from .promise import Promise, async_instance, get_default_scheduler
