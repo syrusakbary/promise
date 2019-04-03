@@ -46,7 +46,7 @@ class AsyncThreadLocal(threading.local):
     @property
     def async_instance(self):
         # type: () -> Async
-        if not getattr(self, 'async_instance'):
+        if not getattr(self, '_async_instance'):
             self._async_instance = Async()
 
         return self._async_instance
