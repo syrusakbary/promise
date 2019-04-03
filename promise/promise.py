@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import partial, wraps
 from sys import version_info, exc_info
-from threading import RLock
+import threading
 from types import TracebackType
 
 from six import reraise  # type: ignore
@@ -37,9 +37,24 @@ if False:
     )
 
 
+class AsyncThreadLocal(threading.local):
+    """
+    The thread local class that make `async_instance` safe for threads.
+    """
+    _async_instance = None
+
+    @property
+    def async_instance(self):
+        # type: () -> Async
+        if not getattr(self, 'async_instance'):
+            self._async_instance = Async()
+
+        return self._async_instance
+
+
 default_scheduler = ImmediateScheduler()
 
-async_instance = Async()
+async_instance = AsyncThreadLocal().async_instance
 
 
 def get_default_scheduler():
