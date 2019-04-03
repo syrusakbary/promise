@@ -21,6 +21,7 @@ if not __SETUP__:
         promisify,
         is_thenable,
         async_instance,
+        async_lock,
         get_default_scheduler,
         set_default_scheduler,
     )
@@ -32,6 +33,7 @@ if not __SETUP__:
         "promisify",
         "is_thenable",
         "async_instance",
+        "async_lock",
         "get_default_scheduler",
         "set_default_scheduler",
         "ImmediateScheduler",

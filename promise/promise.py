@@ -51,11 +51,10 @@ class AsyncThreadLocal(threading.local):
 
         return self._async_instance
 
+async_lock = AsyncThreadLocal()
+async_instance = async_lock.async_instance
 
 default_scheduler = ImmediateScheduler()
-
-async_instance = AsyncThreadLocal().async_instance
-
 
 def get_default_scheduler():
     # type: () -> ImmediateScheduler
@@ -252,7 +251,7 @@ class Promise(Generic[T]):
             if self._is_async_guaranteed:
                 self._settle_promises()
             else:
-                async_instance.settle_promises(self)
+                async_lock.async_instance.settle_promises(self)
 
     def _reject(self, reason, traceback=None):
         # type: (Exception, Optional[TracebackType]) -> None
@@ -262,18 +261,18 @@ class Promise(Generic[T]):
 
         if self._is_final:
             assert self._length == 0
-            async_instance.fatal_error(reason, self.scheduler)
+            async_lock.async_instance.fatal_error(reason, self.scheduler)
             return
 
         if self._length > 0:
-            async_instance.settle_promises(self)
+            async_lock.async_instance.settle_promises(self)
         else:
             self._ensure_possible_rejection_handled()
 
         if self._is_async_guaranteed:
             self._settle_promises()
         else:
-            async_instance.settle_promises(self)
+            async_lock.async_instance.settle_promises(self)
 
     def _ensure_possible_rejection_handled(self):
         # type: () -> None
@@ -512,7 +511,7 @@ class Promise(Generic[T]):
     @classmethod
     def wait(cls, promise, timeout=None):
         # type: (Promise, Optional[float]) -> None
-        async_instance.wait(promise, timeout)
+        async_lock.async_instance.wait(promise, timeout)
 
     def _wait(self, timeout=None):
         # type: (Optional[float]) -> None
@@ -598,7 +597,7 @@ class Promise(Generic[T]):
                 traceback = target._traceback
                 handler = did_reject  # type: ignore
                 # target._rejection_is_unhandled = False
-            async_instance.invoke(
+            async_lock.async_instance.invoke(
                 partial(target._settle_promise, promise, handler, value, traceback),
                 promise.scheduler
                 # target._settle_promise instead?

@@ -1,6 +1,6 @@
 from pytest import raises
 
-from promise import Promise, async_instance
+from promise import Promise, async_lock
 from promise.dataloader import DataLoader
 
 
@@ -426,9 +426,9 @@ def test_wrong_loader_return_type_does_not_block_async_instance():
 
         with raises(Exception):
             a_loader.load("A1").get()
-        assert async_instance.have_drained_queues
+        assert async_lock.async_instance.have_drained_queues
         with raises(Exception):
             a_loader.load("A2").get()
-        assert async_instance.have_drained_queues
+        assert async_lock.async_instance.have_drained_queues
 
     do().get()

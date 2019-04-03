@@ -1,7 +1,7 @@
 from collections import Iterable, namedtuple
 from functools import partial
 
-from .promise import Promise, async_instance, get_default_scheduler
+from .promise import Promise, async_lock, get_default_scheduler
 
 if False:
     from typing import (
@@ -225,7 +225,7 @@ def enqueue_post_promise_job(fn, scheduler):
 
     def on_promise_resolve(v):
         # type: (Any) -> None
-        async_instance.invoke(fn, scheduler)
+        async_lock.async_instance.invoke(fn, scheduler)
 
     resolved_promise.then(on_promise_resolve)  # type: Promise[None]
 
