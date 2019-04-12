@@ -72,15 +72,15 @@ assert p.get() is True
 
 #### Promise.cast(obj)
 
-This function wraps the `obj` act as a `Promise` if possible.
+This function wraps the `obj` ect as a `Promise` if possible.
 Python `Future`s are supported, with a callback to `promise.done` when resolved.
-Have the same effects as `Promise.resolve(obj)`.
+Has the same effects as `Promise.resolve(obj)`.
 
 #### Promise.for_dict(d)
 
 A special function that takes a dictionary of promises and turns them
 into a promise for a dictionary of values. In other words, this turns
-an dictionary of promises for values into a promise for a dictionary
+a dictionary of promises for values into a promise for a dictionary
 of values.
 
 #### Promise.is_thenable(obj)
