@@ -19,7 +19,7 @@ tests_require = [
     "coveralls",
     "futures",
     "pytest-benchmark",
-    "mock",
+    "mock"
 ]
 if IS_PY3:
     tests_require += ["pytest-asyncio"]
