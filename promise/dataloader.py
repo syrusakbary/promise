@@ -164,7 +164,7 @@ class DataLoader(object):
         invalidations across this particular `DataLoader`. Returns itself for
         method chaining.
         """
-        self._promise_cache = {}
+        self._promise_cache.clear()
         return self
 
     def prime(self, key, value):
