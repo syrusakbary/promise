@@ -3,6 +3,7 @@ from functools import partial, wraps
 from sys import version_info, exc_info
 from threading import RLock
 from types import TracebackType
+from weakref import WeakKeyDictionary
 
 from six import reraise  # type: ignore
 from .async_ import Async
@@ -817,7 +818,7 @@ class Promise(Generic[T]):
         )
 
 
-_type_done_callbacks = {}  # type: Dict[type, bool]
+_type_done_callbacks = WeakKeyDictionary()  # type: Dict[type, bool]
 
 
 def is_future_like(_type):

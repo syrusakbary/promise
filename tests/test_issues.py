@@ -2,6 +2,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from promise import Promise
 import time
+import weakref
+import gc
 
 executor = ThreadPoolExecutor(max_workers=40000)
 
@@ -108,3 +110,23 @@ def test_issue_33():
 
     p = Promise.resolve(None).then(do)
     assert p.get() == "ok"
+
+
+def test_issue_75():
+    def function_with_local_type():
+        class A:
+            pass
+
+        a = A()
+        assert a == Promise.resolve(a).get()
+
+        return weakref.ref(A)
+
+    weak_reference = function_with_local_type()
+
+    # The local type 'A' from the function is still kept alive by reference cycles.
+    gc.collect()
+
+    # Now the local type should have been garbage collected,
+    # such that the weak reference should be invalid.
+    assert not weak_reference()
