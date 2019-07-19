@@ -35,6 +35,7 @@ if False:
         Union,
         Generic,
         Hashable,
+        MutableMapping,
     )
 
 
@@ -568,7 +569,7 @@ class Promise(Generic[T]):
         did_reject=None,  # type: Optional[Callable[[Exception], S]]
     ):
         # type: (...) -> Promise[S]
-        promise = self.__class__()
+        promise = self.__class__()  # type: Promise
         target = self._target()
 
         state = target._state
@@ -818,7 +819,7 @@ class Promise(Generic[T]):
         )
 
 
-_type_done_callbacks = WeakKeyDictionary()
+_type_done_callbacks = WeakKeyDictionary()  # type: MutableMapping[type, bool]
 
 
 def is_future_like(_type):
