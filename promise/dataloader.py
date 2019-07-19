@@ -67,15 +67,10 @@ class DataLoader(object):
         if cache is not None:
             self.cache = cache
 
-        if get_cache_key is not None:
-            self.get_cache_key = get_cache_key
-
+        self.get_cache_key = get_cache_key or (lambda x: x)
         self._promise_cache = cache_map or {}
         self._queue = []  # type: List[Loader]
         self._scheduler = scheduler
-
-    def get_cache_key(self, key):  # type: ignore
-        return key
 
     def load(self, key=None):
         # type: (Hashable) -> Promise
