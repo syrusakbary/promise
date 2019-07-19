@@ -818,7 +818,7 @@ class Promise(Generic[T]):
         )
 
 
-_type_done_callbacks = WeakKeyDictionary()  # type: Dict[type, bool]
+_type_done_callbacks = WeakKeyDictionary()
 
 
 def is_future_like(_type):
