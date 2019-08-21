@@ -1,5 +1,9 @@
 from functools import partial
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    # Python2
+    from collections import Iterable
 
 if False:
     from .promise import Promise
