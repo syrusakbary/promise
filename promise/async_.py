@@ -1,4 +1,5 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
+import threading
 from collections import deque
 
 if False:
@@ -6,7 +7,7 @@ if False:
     from typing import Any, Callable, Optional, Union  # flake8: noqa
 
 
-class Async(object):
+class Async(threading.local):
     def __init__(self, trampoline_enabled=True):
         self.is_tick_used = False
         self.late_queue = deque()  # type: ignore
