@@ -791,7 +791,7 @@ class Promise(Generic[T]):
         dict_type = type(m)  # type: Type[Dict]
 
         if not m:
-            return cls.resolve(dict_type())
+            return cls.resolve(dict_type())  # type: ignore
 
         def handle_success(resolved_values):
             # type: (List[S]) -> Dict[Hashable, S]
