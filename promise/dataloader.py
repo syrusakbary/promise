@@ -1,4 +1,8 @@
-from collections import Iterable, namedtuple
+from collections import namedtuple
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 from functools import partial
 
 from .promise import Promise, async_instance, get_default_scheduler
@@ -67,15 +71,11 @@ class DataLoader(object):
         if cache is not None:
             self.cache = cache
 
-        if get_cache_key is not None:
-            self.get_cache_key = get_cache_key
+        self.get_cache_key = get_cache_key or (lambda x: x)
 
         self._promise_cache = cache_map or {}
         self._queue = []  # type: List[Loader]
         self._scheduler = scheduler
-
-    def get_cache_key(self, key):  # type: ignore
-        return key
 
     def load(self, key=None):
         # type: (Hashable) -> Promise
@@ -227,7 +227,7 @@ def enqueue_post_promise_job(fn, scheduler):
         # type: (Any) -> None
         async_instance.invoke(fn, scheduler)
 
-    resolved_promise.then(on_promise_resolve)  # type: Promise[None]
+    resolved_promise.then(on_promise_resolve) 
 
 
 def dispatch_queue(loader):
