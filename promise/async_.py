@@ -1,12 +1,13 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
 from collections import deque
+from threading import local
 
 if False:
     from .promise import Promise
     from typing import Any, Callable, Optional, Union  # flake8: noqa
 
 
-class Async(object):
+class Async(local):
     def __init__(self, trampoline_enabled=True):
         self.is_tick_used = False
         self.late_queue = deque()  # type: ignore
