@@ -321,7 +321,7 @@ class Promise(Generic[T]):
                 if async_guaranteed:
                     promise._is_async_guaranteed = True  # type: ignore
                 self._settle_promise_from_handler(  # type: ignore
-                    handler, value, promise
+                    handler, value, promise  # type: ignore
                 )  # type: ignore
         elif is_promise:
             if async_guaranteed:
@@ -793,7 +793,7 @@ class Promise(Generic[T]):
         dict_type = type(m)  # type: Type[Dict]
 
         if not m:
-            return cls.resolve(dict_type())
+            return cls.resolve(dict_type())  # type: ignore
 
         def handle_success(resolved_values):
             # type: (List[S]) -> Dict[Hashable, S]

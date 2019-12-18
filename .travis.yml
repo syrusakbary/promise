@@ -4,6 +4,8 @@ python:
 - 2.7
 - 3.5
 - 3.6
+- 3.7
+- 3.8
 - pypy
 cache: pip
 install:
@@ -15,7 +17,7 @@ after_success:
 matrix:
   fast_finish: true
   include:
-  - python: '3.6'
+  - python: '3.8'
     script: |
       # pip install pyre-check
       # pyre --source-directory promise check

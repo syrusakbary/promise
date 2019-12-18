@@ -1,5 +1,10 @@
-from collections import Iterable, namedtuple
+from collections import namedtuple
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 from functools import partial
+from threading import local
 
 from .promise import Promise, async_instance, get_default_scheduler
 
@@ -29,7 +34,7 @@ def get_chunks(iterable_obj, chunk_size=1):
 Loader = namedtuple("Loader", "key,resolve,reject")
 
 
-class DataLoader(object):
+class DataLoader(local):
 
     batch = True
     max_batch_size = None  # type: int
@@ -207,14 +212,13 @@ class DataLoader(object):
 # ensuring that it always occurs after "PromiseJobs" ends.
 
 # Private: cached resolved Promise instance
-resolved_promise = None  # type: Optional[Promise[None]]
-
+cache = local()
 
 def enqueue_post_promise_job(fn, scheduler):
     # type: (Callable, Any) -> None
-    global resolved_promise
-    if not resolved_promise:
-        resolved_promise = Promise.resolve(None)
+    global cache
+    if not hasattr(cache, 'resolved_promise'):
+        cache.resolved_promise = Promise.resolve(None)
     if not scheduler:
         scheduler = get_default_scheduler()
 
@@ -222,7 +226,7 @@ def enqueue_post_promise_job(fn, scheduler):
         # type: (Any) -> None
         async_instance.invoke(fn, scheduler)
 
-    resolved_promise.then(on_promise_resolve)  # type: Promise[None]
+    cache.resolved_promise.then(on_promise_resolve) 
 
 
 def dispatch_queue(loader):
