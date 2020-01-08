@@ -1,4 +1,5 @@
 from functools import partial
+from types import TracebackType
 try:
     from collections.abc import Iterable
 except ImportError:
@@ -90,14 +91,14 @@ class PromiseList(object):
                 if maybe_promise.is_pending:
                     maybe_promise._add_callbacks(
                         partial(self._promise_fulfilled, i=i),
-                        self._promise_rejected,
+                        partial(self._promise_rejected, promise=maybe_promise),
                         None,
                     )
                     self._values[i] = maybe_promise
                 elif maybe_promise.is_fulfilled:
                     is_resolved = self._promise_fulfilled(maybe_promise._value(), i)
                 elif maybe_promise.is_rejected:
-                    is_resolved = self._promise_rejected(maybe_promise._reason())
+                    is_resolved = self._promise_rejected(maybe_promise._reason(), promise=maybe_promise)
 
             else:
                 is_resolved = self._promise_fulfilled(val, i)
@@ -122,14 +123,14 @@ class PromiseList(object):
             return True
         return False
 
-    def _promise_rejected(self, reason):
-        # type: (Exception) -> bool
+    def _promise_rejected(self, reason, promise):
+        # type: (Exception, Promise) -> bool
         if self.is_resolved:
             return False
         # assert not self.is_resolved
         # assert isinstance(self._values, Iterable)
         self._total_resolved += 1
-        self._reject(reason)
+        self._reject(reason, traceback=promise._traceback)
         return True
 
     @property
@@ -144,8 +145,8 @@ class PromiseList(object):
         self._values = None
         self.promise._fulfill(value)
 
-    def _reject(self, reason):
-        # type: (Exception) -> None
+    def _reject(self, reason, traceback=None):
+        # type: (Exception, Optional[TracebackType]) -> None
         assert not self.is_resolved
         self._values = None
-        self.promise._reject_callback(reason, False)
+        self.promise._reject_callback(reason, False, traceback=traceback)
