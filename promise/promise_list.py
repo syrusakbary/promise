@@ -130,7 +130,7 @@ class PromiseList(object):
         # assert not self.is_resolved
         # assert isinstance(self._values, Iterable)
         self._total_resolved += 1
-        self._reject(reason, traceback=promise._traceback)
+        self._reject(reason, traceback=promise._target()._traceback)
         return True
 
     @property
