@@ -321,7 +321,7 @@ class Promise(Generic[T]):
                 if async_guaranteed:
                     promise._is_async_guaranteed = True  # type: ignore
                 self._settle_promise_from_handler(  # type: ignore
-                    handler, value, promise  # type: ignore
+                    handler, value, promise, traceback=traceback  # type: ignore
                 )  # type: ignore
         elif is_promise:
             if async_guaranteed:
@@ -342,9 +342,13 @@ class Promise(Generic[T]):
         self._promise0 = None
         self._settle_promise(promise, handler, value, traceback)  # type: ignore
 
-    def _settle_promise_from_handler(self, handler, value, promise):
+    def _settle_promise_from_handler(self, handler, value, promise, traceback=None):
         # type: (Callable, Any, Promise) -> None
-        value, error_with_tb = try_catch(handler, value)  # , promise
+        kwargs = {}
+        if traceback:
+            kwargs['traceback'] = traceback
+
+        value, error_with_tb = try_catch(handler, value, **kwargs)  # , promise
 
         if error_with_tb:
             error, tb = error_with_tb
