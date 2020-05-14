@@ -1,4 +1,5 @@
 from collections import namedtuple
+from sys import exc_info
 try:
     from collections.abc import Iterable
 except ImportError:
@@ -260,7 +261,8 @@ def dispatch_queue_batch(loader, queue):
     try:
         batch_promise = loader.batch_load_fn(keys)
     except Exception as e:
-        failed_dispatch(loader, queue, e)
+        tb = exc_info()[2]
+        failed_dispatch(loader, queue, e, traceback=tb)
         return None
 
     # Assert the expected response from batch_load_fn
@@ -315,7 +317,7 @@ def dispatch_queue_batch(loader, queue):
     )
 
 
-def failed_dispatch(loader, queue, error):
+def failed_dispatch(loader, queue, error, traceback=None):
     # type: (DataLoader, Iterable[Loader], Exception) -> None
     """
     Do not cache individual loads if the entire batch dispatch fails,
@@ -323,4 +325,4 @@ def failed_dispatch(loader, queue, error):
     """
     for l in queue:
         loader.clear(l.key)
-        l.reject(error)
+        l.reject(error, traceback=traceback)
