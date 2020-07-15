@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import partial, wraps
 from sys import version_info, exc_info
-from threading import RLock
+from threading import Lock
 from types import TracebackType
 from weakref import WeakKeyDictionary
 
@@ -42,6 +42,8 @@ if False:
 default_scheduler = ImmediateScheduler()
 
 async_instance = Async()
+
+_state_lock = Lock()
 
 
 def get_default_scheduler():
@@ -232,8 +234,9 @@ class Promise(Generic[T]):
             err = make_self_resolution_error()
             # self._attach_extratrace(err)
             return self._reject(err)
-        self._state = STATE_FULFILLED
-        self._rejection_handler0 = value
+        with _state_lock:
+            self._state = STATE_FULFILLED
+            self._rejection_handler0 = value
 
         if self._length > 0:
             if self._is_async_guaranteed:
@@ -243,9 +246,10 @@ class Promise(Generic[T]):
 
     def _reject(self, reason, traceback=None):
         # type: (Exception, Optional[TracebackType]) -> None
-        self._state = STATE_REJECTED
-        self._fulfillment_handler0 = reason
-        self._traceback = traceback
+        with _state_lock:
+            self._state = STATE_REJECTED
+            self._fulfillment_handler0 = reason
+            self._traceback = traceback
 
         if self._is_final:
             assert self._length == 0
@@ -507,13 +511,13 @@ class Promise(Generic[T]):
 
     def get(self, timeout=None):
         # type: (Optional[float]) -> T
-        target = self._target()
         self._wait(timeout or DEFAULT_TIMEOUT)
         return self._target_settled_value(_raise=True)
 
     def _target_settled_value(self, _raise=False):
         # type: (bool) -> Any
-        return self._target()._settled_value(_raise)
+        with _state_lock:
+            return self._target()._settled_value(_raise)
 
     _value = _reason = _target_settled_value
     value = reason = property(_target_settled_value)
@@ -570,12 +574,14 @@ class Promise(Generic[T]):
     ):
         # type: (...) -> Promise[S]
         promise = self.__class__()  # type: Promise
-        target = self._target()
 
-        state = target._state
-        if state == STATE_PENDING:
-            target._add_callbacks(did_fulfill, did_reject, promise)
-        else:
+        with _state_lock:
+            target = self._target()
+            state = target._state
+            if state == STATE_PENDING:
+                target._add_callbacks(did_fulfill, did_reject, promise)
+
+        if state != STATE_PENDING:
             traceback = None
             if state == STATE_FULFILLED:
                 value = target._rejection_handler0
