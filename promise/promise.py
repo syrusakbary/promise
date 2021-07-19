@@ -223,7 +223,8 @@ class Promise(Generic[T]):
         elif self._state == STATE_REJECTED:
             if _raise:
                 raise_val = self._fulfillment_handler0
-                reraise(type(raise_val), raise_val, self._traceback)
+                traceback = self._traceback or raise_val.__traceback__
+                reraise(type(raise_val), raise_val, traceback)
             return self._fulfillment_handler0
 
     def _fulfill(self, value):
