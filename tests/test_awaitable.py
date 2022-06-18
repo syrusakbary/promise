@@ -1,18 +1,15 @@
-from asyncio import coroutine
 from pytest import mark
 from time import sleep
 from promise import Promise
 
 
 @mark.asyncio
-@coroutine
-def test_await():
-    yield from Promise.resolve(True)
+async def test_await():
+    await Promise.resolve(True)
 
 
 @mark.asyncio
-@coroutine
-def test_await_time():
+async def test_await_time():
     def resolve_or_reject(resolve, reject):
         sleep(.1)
         resolve(True)
@@ -22,11 +19,9 @@ def test_await_time():
 
 
 @mark.asyncio
-@coroutine
-def test_promise_coroutine():
-    @coroutine
-    def my_coro():
-        yield from Promise.resolve(True)
+async def test_promise_coroutine():
+    async def my_coro():
+        await Promise.resolve(True)
 
     promise = Promise.resolve(my_coro())
     assert isinstance(promise, Promise)
