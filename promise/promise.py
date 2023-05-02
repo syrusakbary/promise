@@ -170,7 +170,7 @@ class Promise(Generic[T]):
 
     def __await__(self):
         # type: () -> Generator[Any, None, Any]
-         return self.__iter__()
+        return self.__iter__()
 
     @deprecated(
         "Rejecting directly in a Promise instance is deprecated, as Promise.reject() is now a class method. "
