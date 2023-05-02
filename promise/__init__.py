@@ -10,7 +10,7 @@ except NameError:
     __SETUP__ = False
 
 
-VERSION = (2, 3, 1, "final", 0)
+VERSION = (2, 3, 1, "alpha", 0)
 
 __version__ = get_version(VERSION)
 
