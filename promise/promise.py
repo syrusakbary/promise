@@ -168,7 +168,9 @@ class Promise(Generic[T]):
         # type: () -> Iterator
         return iterate_promise(self._target())  # type: ignore
 
-    __await__ = __iter__
+    def __await__(self):
+        # type: () -> Generator[Any, None, Any]
+         return self.__iter__()
 
     @deprecated(
         "Rejecting directly in a Promise instance is deprecated, as Promise.reject() is now a class method. "
