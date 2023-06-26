@@ -1,5 +1,7 @@
 # flake8: noqa
-if False:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
     from .promise import Promise
     from typing import Iterator
 

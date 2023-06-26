@@ -1,10 +1,11 @@
 # Based on https://github.com/petkaantonov/bluebird/blob/master/src/promise.js
 from collections import deque
 from threading import local
+from typing import TYPE_CHECKING
 
-if False:
+if TYPE_CHECKING:
     from .promise import Promise
-    from typing import Any, Callable, Optional, Union  # flake8: noqa
+    from typing import Any, Callable, Optional, Union
 
 
 class Async(local):
