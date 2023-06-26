@@ -16,13 +16,13 @@ from .compat import (
 from .utils import deprecated, integer_types, string_types, text_type, binary_type, warn
 from .promise_list import PromiseList
 from .schedulers.immediate import ImmediateScheduler
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, TYPE_CHECKING
 
 # from .schedulers.gevent import GeventScheduler
 # from .schedulers.asyncio import AsyncioScheduler
 # from .schedulers.thread import ThreadScheduler
 
-if False:
+if TYPE_CHECKING:
     from typing import (
         Type,
         List,

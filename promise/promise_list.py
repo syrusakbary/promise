@@ -4,15 +4,14 @@ try:
     from collections.abc import Iterable
 except ImportError:
     from collections import Iterable
+from typing import TYPE_CHECKING
 
-if False:
+if TYPE_CHECKING:
     from .promise import Promise
     from typing import (
         Any,
         Optional,
-        Tuple,
         Union,
-        List,
         Type,
         Collection,
     )  # flake8: noqa

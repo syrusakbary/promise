@@ -5,10 +5,11 @@ except ImportError:
     from collections import Iterable
 from functools import partial
 from threading import local
+from typing import TYPE_CHECKING
 
 from .promise import Promise, async_instance, get_default_scheduler
 
-if False:
+if TYPE_CHECKING:
     from typing import (
         Any,
         List,
