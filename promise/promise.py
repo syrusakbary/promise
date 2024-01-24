@@ -481,7 +481,7 @@ class Promise(Generic[T]):
 
         def reject(reason, traceback=None):
             # type: (Exception, TracebackType) -> None
-            self._reject_callback(reason, synchronous, traceback)
+            self._reject_callback(reason, synchronous, traceback or getattr(reason, '__traceback__', None))
 
         error = None
         traceback = None
