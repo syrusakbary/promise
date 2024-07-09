@@ -68,4 +68,5 @@ target/
 /.pytest_cache
 /.pyre
 /.mypy_cache
+/.venv
 /type_info.json
