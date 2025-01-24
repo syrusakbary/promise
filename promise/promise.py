@@ -149,6 +149,17 @@ class Promise(Generic[T]):
         # self.reject = self._deprecated_reject
         # self.resolve = self._deprecated_resolve
 
+    def __del__(self):
+        # type: () -> None
+        # Clean up references to break up any reference cycles
+        self._handlers = None
+        self._fulfillment_handler0 = None
+        self._rejection_handler0 = None
+        self._promise0 = None
+        self._future = None
+        self._event_instance = None
+        self._traceback = None
+
     @property
     def scheduler(self):
         # type: () -> ImmediateScheduler
