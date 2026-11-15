@@ -237,6 +237,53 @@ def test_allows_priming_the_cache():
     do().get()
 
 
+def test_uses_supplied_empty_cache_map():
+    cache_map = {}
+    loader, load_calls = id_loader(cache_map=cache_map)
+
+    loaded = loader.load("A")
+    assert loaded.get() == "A"
+    assert cache_map["A"] is loaded
+
+    cache_map.clear()
+    assert loader.load("A").get() == "A"
+    assert load_calls == [["A"], ["A"]]
+
+    loader.clear("A")
+    assert cache_map == {}
+    loader.prime("B", "primed")
+    assert cache_map["B"].get() == "primed"
+    assert loader.load("B") is cache_map["B"]
+    loader.clear_all()
+    assert cache_map == {}
+
+
+def test_uses_custom_cache_eviction():
+    class SingleEntryCache(dict):
+        def __setitem__(self, key, value):
+            self.clear()
+            super(SingleEntryCache, self).__setitem__(key, value)
+
+    cache_map = SingleEntryCache()
+    loader, load_calls = id_loader(cache_map=cache_map)
+
+    assert loader.load("A").get() == "A"
+    assert loader.load("B").get() == "B"
+    assert loader.load("A").get() == "A"
+    assert load_calls == [["A"], ["B"], ["A"]]
+    assert list(cache_map) == ["A"]
+
+
+def test_default_cache_maps_are_independent():
+    first, _ = id_loader()
+    second, second_calls = id_loader(cache_map=None)
+
+    first.prime("A", "primed")
+    assert first.load("A").get() == "primed"
+    assert second.load("A").get() == "A"
+    assert second_calls == [["A"]]
+
+
 def test_does_not_prime_keys_that_already_exist():
     @Promise.safe
     def do():
