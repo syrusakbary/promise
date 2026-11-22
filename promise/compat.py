@@ -1,9 +1,12 @@
 try:
-    from inspect import iscoroutine
+    from inspect import isawaitable as iscoroutine
 except ImportError:
+    try:
+        from asyncio import iscoroutine
+    except ImportError:
 
-    def iscoroutine(obj):  # type: ignore
-        return False
+        def iscoroutine(obj):  # type: ignore
+            return False
 
 
 try:

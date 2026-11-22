@@ -1,6 +1,36 @@
 from asyncio import sleep, Future, wait, FIRST_COMPLETED
 from pytest import mark
 from promise import Promise, is_thenable
+from types import coroutine
+
+
+@mark.asyncio
+async def test_promisify_generator_coroutine():
+    @coroutine
+    def generator_coroutine():
+        yield from sleep(.01).__await__()
+        return 42
+
+    pending = generator_coroutine()
+    assert is_thenable(pending)
+    assert await Promise.resolve(pending) == 42
+
+
+@mark.asyncio
+async def test_promisify_custom_awaitable():
+    class Awaitable:
+        def __await__(self):
+            return sleep(.01, result=42).__await__()
+
+    pending = Awaitable()
+    assert is_thenable(pending)
+    assert await Promise.resolve(pending) == 42
+
+
+def test_plain_generator_is_not_thenable():
+    generator = (value for value in [42])
+    assert not is_thenable(generator)
+    assert Promise.resolve(generator).get() is generator
 
 
 @mark.asyncio
